@@ -51,6 +51,19 @@ class QEzPoseLibrary(quicwindow.QUicWindow):
     # endregion
 
     # region Methods
+    @classmethod
+    def customWidgets(cls):
+        """
+        Returns a dictionary of custom widgets used by this class.
+
+        :rtype: dict[str, type]
+        """
+
+        customWidgets = super(QEzPoseLibrary, cls).customWidgets()
+        customWidgets['QRollout'] = qrollout.QRollout
+
+        return customWidgets
+
     def postLoad(self):
         """
         Called after the user interface has been loaded.
@@ -78,18 +91,6 @@ class QEzPoseLibrary(quicwindow.QUicWindow):
         self.fileItemFilterModel.setSourceModel(self.fileItemModel)
 
         self.fileListView.setModel(self.fileItemFilterModel)
-
-    def customWidgets(cls):
-        """
-        Returns a dictionary of custom widgets used by this class.
-
-        :rtype: dict[str, type]
-        """
-
-        customWidgets = super(QEzPoseLibrary, cls).customWidgets()
-        customWidgets['QRollout'] = qrollout.QRollout
-
-        return customWidgets
 
     def cwd(self):
 

@@ -165,15 +165,12 @@
          </layout>
         </item>
         <item>
-         <widget class="QGroupBox" name="detailsGroupBox">
+         <widget class="QRollout" name="detailsWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
-          </property>
-          <property name="title">
-           <string>Details:</string>
           </property>
           <layout class="QFormLayout" name="detailsLayout">
            <property name="sizeConstraint">
@@ -383,15 +380,12 @@ qproperty-frame: false;
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="optionsGroupBox">
+         <widget class="QRollout" name="optionsWidget" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
-          </property>
-          <property name="title">
-           <string>Options:</string>
           </property>
           <layout class="QVBoxLayout" name="optionsLayout">
            <item>
@@ -537,6 +531,14 @@ qproperty-frame: false;
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QRollout</class>
+   <extends>QWidget</extends>
+   <header>qrollout.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
