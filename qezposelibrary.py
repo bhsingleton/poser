@@ -6,8 +6,8 @@ import webbrowser
 from PySide2 import QtCore, QtWidgets, QtGui
 from win32 import win32security
 from dcc import fnscene
-from dcc.userinterface import quicwindow, qrollout
-from dcc.userinterface.models import qfileitemmodel
+from dcc.ui import quicwindow, qrollout
+from dcc.ui.models import qfileitemmodel, qfileitemfiltermodel
 
 import logging
 logging.basicConfig()
@@ -76,7 +76,7 @@ class QEzPoseLibrary(quicwindow.QUicWindow):
         self.directoryItemModel = qfileitemmodel.QFileItemModel(self._cwd, parent=self)
         self.cwdChanged.connect(self.directoryItemModel.setCwd)
 
-        self.directoryItemFilterModel = qfileitemmodel.QFileItemFilterModel(parent=self)
+        self.directoryItemFilterModel = qfileitemfiltermodel.QFileItemFilterModel(parent=self)
         self.directoryItemFilterModel.setSourceModel(self.directoryItemModel)
         self.directoryItemFilterModel.setIgnoreFiles(True)
 
@@ -87,7 +87,7 @@ class QEzPoseLibrary(quicwindow.QUicWindow):
         self.fileItemModel = qfileitemmodel.QFileItemModel(self._cwd, parent=self)
         self.fileItemModel.setUniformSize(128)
 
-        self.fileItemFilterModel = qfileitemmodel.QFileItemFilterModel(parent=self)
+        self.fileItemFilterModel = qfileitemfiltermodel.QFileItemFilterModel(parent=self)
         self.fileItemFilterModel.setSourceModel(self.fileItemModel)
 
         self.fileListView.setModel(self.fileItemFilterModel)

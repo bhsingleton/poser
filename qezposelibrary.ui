@@ -165,7 +165,7 @@
          </layout>
         </item>
         <item>
-         <widget class="QRollout" name="detailsWidget" native="true">
+         <widget class="QGroupBox" name="detailsWidget">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
             <horstretch>0</horstretch>
@@ -380,7 +380,7 @@ qproperty-frame: false;
          </widget>
         </item>
         <item>
-         <widget class="QRollout" name="optionsWidget" native="true">
+         <widget class="QGroupBox" name="optionsWidget">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
             <horstretch>0</horstretch>
@@ -531,14 +531,6 @@ qproperty-frame: false;
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>QRollout</class>
-   <extends>QWidget</extends>
-   <header>qrollout.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>
