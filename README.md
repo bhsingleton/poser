@@ -1,2 +1,2 @@
-# ezposelibrary
-A DCC agnostic python tool used for managing poses for animation.
+# ezposer
+A python pose tool for animating in Maya.
