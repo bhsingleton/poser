@@ -7,11 +7,11 @@ from maya.api import OpenMaya as om
 from mpy import mpynode, mpyfactory
 from PySide2 import QtCore, QtWidgets, QtGui
 from dcc.python import stringutils
-from dcc.maya.json import jsonutils
 from dcc.maya.libs import dagutils, sceneutils, animutils
 from dcc.ui import quicwindow, qrollout
 from dcc.ui.models import qfileitemmodel, qfileitemfiltermodel
 from dcc.ui.dialogs import qlistdialog
+from ..libs import poseutils
 
 import logging
 logging.basicConfig()
@@ -195,8 +195,8 @@ class QEzPoser(quicwindow.QUicWindow):
         self.setCwd(self.settings.value('editor/cwd', defaultValue=self.scene.projectPath))
         self.setCurrentPath(self.settings.value('editor/currentPath', defaultValue=self.currentPath()))
         self.setNamespaceOption(self.settings.value('editor/namespaceOption', defaultValue=0))
-        self.setTransformOptions(json.loads(self.settings.value('editor/transformOptions', defaultValue='[true, true, false]')))
         self.setControllerPatterns(json.loads(self.settings.value('editor/controllerPatterns', defaultValue='[]')))
+        self.setTransformOptions(json.loads(self.settings.value('editor/transformOptions', defaultValue='[true, true, false]')))
 
     def saveSettings(self):
         """
@@ -245,6 +245,7 @@ class QEzPoser(quicwindow.QUicWindow):
         if os.path.isdir(cwd) and os.path.isabs(cwd):
 
             self._cwd = cwd
+            self.fileItemModel.setCwd(cwd)
 
     def currentPath(self, absolute=False):
         """
@@ -353,7 +354,7 @@ class QEzPoser(quicwindow.QUicWindow):
         """
         Returns the selected file path.
 
-        :rtype: qfilepath.QFilePath
+        :rtype: Union[qfilepath.QFilePath, None]
         """
 
         selectedIndices = self.fileListView.selectedIndexes()
@@ -361,7 +362,7 @@ class QEzPoser(quicwindow.QUicWindow):
 
         if numSelectedIndices == 1:
 
-            index = selectedIndices[0]
+            index = self.fileItemFilterModel.mapToSource(selectedIndices[0])
             return self.fileItemModel.pathFromIndex(index)
 
         else:
@@ -396,6 +397,28 @@ class QEzPoser(quicwindow.QUicWindow):
 
             return list(map(self.scene.__call__, selection))
 
+    def currentNamespace(self):
+        """
+        Returns the current namespace based on the namespace option.
+
+        :rtype: Union[str, None]
+        """
+
+        namespaceOption = self.namespaceOption()
+
+        if namespaceOption == 0:  # Use pose namespace
+
+            return None
+
+        elif namespaceOption == 1:  # Use selected namespace
+
+            selection = self.activeSelection()
+            return selection[0].namespace() if len(selection) > 0 else ''
+
+        else:  # Use current namespace
+
+            return self.scene.namespace
+
     def refresh(self):
         """
         Refreshes the file item model's current working directory.
@@ -403,7 +426,7 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.fileItemModel.setCwd(self.currentPath(absolute=True))
+        self.fileItemModel.refresh()
     # endregion
 
     # region Slots
@@ -561,7 +584,7 @@ class QEzPoser(quicwindow.QUicWindow):
             #
             response = QtWidgets.QMessageBox.warning(
                 self,
-                'Create New Export Set',
+                'Create New Folder',
                 'The supplied name is not unique!',
                 QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel
             )
@@ -575,6 +598,7 @@ class QEzPoser(quicwindow.QUicWindow):
             # Create new directory
             #
             os.mkdir(absolutePath)
+            self.refresh()
 
     @QtCore.Slot(bool)
     def on_addPoseAction_triggered(self, checked=False):
@@ -602,7 +626,9 @@ class QEzPoser(quicwindow.QUicWindow):
         # Export pose
         #
         absolutePath = os.path.join(self.currentPath(absolute=True), '{name}.pose'.format(name=name))
-        jsonutils.exportPose(absolutePath, self.activeSelection(asObjects=True))
+        poseutils.exportPose(absolutePath, self.activeSelection())
+
+        self.refresh()
 
     @QtCore.Slot(bool)
     def on_addAnimationAction_triggered(self, checked=False):
@@ -630,7 +656,9 @@ class QEzPoser(quicwindow.QUicWindow):
         # Export animation
         #
         absolutePath = os.path.join(self.currentPath(absolute=True), '{name}.anim'.format(name=name))
-        jsonutils.exportAnimation(absolutePath, self.activeSelection(asObjects=True))
+        poseutils.exportPose(absolutePath, self.activeSelection(), skipKeys=False, skipLayers=False)
+
+        self.refresh()
 
     @QtCore.Slot(bool)
     def on_selectNodesAction_triggered(self, checked=False):
@@ -641,7 +669,25 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        pass
+        # Get selected file
+        #
+        file = self.selectedFile()
+
+        if file is None:
+
+            log.warning('No file selected!')
+            return
+
+        # Select nodes from pose
+        #
+        if file.isFile():
+
+            pose = poseutils.importPose(str(file))
+            pose.selectAssociatedNodes(namespace=self.currentNamespace())
+
+        else:
+
+            log.warning('No file selected!')
 
     @QtCore.Slot(bool)
     def on_renameFileAction_triggered(self, checked=False):
@@ -663,7 +709,28 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        pass
+        # Get selected file
+        #
+        file = self.selectedFile()
+
+        if file is None:
+
+            log.warning('No file selected!')
+            return
+
+        # Check which operation to perform
+        #
+        if file.extension == '.pose':
+
+            poseutils.exportPose(str(file), self.activeSelection())
+
+        elif file.extension == '.anim':
+
+            poseutils.exportPose(str(file), self.activeSelection(), skipKeys=False, skipLayers=False)
+
+        else:
+
+            pass
 
     @QtCore.Slot(bool)
     def on_deleteFileAction_triggered(self, checked=False):
@@ -746,7 +813,27 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        pass
+        # Get selected file
+        #
+        file = self.selectedFile()
+
+        if file is None:
+
+            log.warning('No file selected!')
+            return
+
+        # Apply pose to selection
+        #
+        file = self.selectedFile()
+
+        if file.isFile():
+
+            pose = poseutils.importPose(str(file))
+            pose.applyPose(*self.activeSelection())
+
+        else:
+
+            log.warning('No file selected!')
 
     @QtCore.Slot(bool)
     def on_applyRelativePushButton_clicked(self, checked=False):
@@ -768,7 +855,8 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        pass
+        selection = self.activeSelection()
+        self._poseClipboard = poseutils.createPose(*selection)
 
     @QtCore.Slot(bool)
     def on_pastePosePushButton_clicked(self, checked=False):
@@ -779,7 +867,23 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        pass
+        if self._poseClipboard is not None:
+
+            selection = self.activeSelection()
+            self._poseClipboard.applyPose(*selection)
+
+    @QtCore.Slot(bool)
+    def on_resetPosePushButton_clicked(self, checked=False):
+        """
+        Slot method for the resetPosePushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
+
+            node.resetTransform()
 
     @QtCore.Slot(bool)
     def on_mirrorPosePushButton_clicked(self, checked=False):
@@ -795,6 +899,19 @@ class QEzPoser(quicwindow.QUicWindow):
             node.mirrorTransform()
 
     @QtCore.Slot(bool)
+    def on_pullPosePushButton_clicked(self, checked=False):
+        """
+        Slot method for the pullPosePushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
+
+            node.mirrorTransform(pull=True)
+
+    @QtCore.Slot(bool)
     def on_mirrorAnimationPushButton_clicked(self, checked=False):
         """
         Slot method for the mirrorAnimationPushButton's `clicked` signal.
@@ -806,4 +923,17 @@ class QEzPoser(quicwindow.QUicWindow):
         for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
 
             node.mirrorAnimation()
+
+    @QtCore.Slot(bool)
+    def on_pullAnimationPushButton_clicked(self, checked=False):
+        """
+        Slot method for the pullAnimationPushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
+
+            node.mirrorAnimation(pull=True)
     # endregion
