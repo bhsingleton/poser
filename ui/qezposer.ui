@@ -13,7 +13,7 @@
   <property name="minimumSize">
    <size>
     <width>300</width>
-    <height>400</height>
+    <height>600</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -128,8 +128,14 @@
            <property name="invertedAppearance">
             <bool>false</bool>
            </property>
+           <property name="invertedControls">
+            <bool>false</bool>
+           </property>
            <property name="tickPosition">
             <enum>QSlider::TicksBelow</enum>
+           </property>
+           <property name="tickInterval">
+            <number>5</number>
            </property>
           </widget>
          </item>
@@ -144,29 +150,7 @@
        <string>Quick Pose:</string>
       </property>
       <layout class="QGridLayout" name="gridLayout">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="copyPosePushButton">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Copies a pose to the clipboard.</string>
-         </property>
-         <property name="text">
-          <string>Copy Pose</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
+       <item row="0" column="2">
         <widget class="QPushButton" name="pastePosePushButton">
          <property name="minimumSize">
           <size>
@@ -188,7 +172,29 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0" colspan="2">
+       <item row="0" column="1">
+        <widget class="QPushButton" name="copyPosePushButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Copies a pose to the clipboard.</string>
+         </property>
+         <property name="text">
+          <string>Copy Pose</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
         <widget class="QPushButton" name="resetPosePushButton">
          <property name="minimumSize">
           <size>
@@ -207,94 +213,10 @@
          </property>
         </widget>
        </item>
-      </layout>
-     </widget>
-    </item>
-    <item>
-     <widget class="QGroupBox" name="mirrorPoseGroupBox">
-      <property name="title">
-       <string>Mirror Pose:</string>
-      </property>
-      <layout class="QGridLayout" name="mirrorPoseLayout">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="mirrorPosePushButton">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Mirrors the pose on the selected nodes.</string>
-         </property>
-         <property name="text">
-          <string>Mirror Pose</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QPushButton" name="mirrorAnimationPushButton">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>Mirrors the animation on the selected nodes.</string>
-         </property>
-         <property name="text">
-          <string>Mirror Animation</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <widget class="QPushButton" name="pullPosePushButton">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Pull Pose</string>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="1">
-        <widget class="QPushButton" name="pullAnimationPushButton">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>20</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>20</height>
-          </size>
-         </property>
+        <widget class="QPushButton" name="zeroPosePushButton">
          <property name="text">
-          <string>Pull Animation</string>
+          <string>Zero Pose</string>
          </property>
         </widget>
        </item>
@@ -322,7 +244,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Holds the selected transform from the selected node.</string>
+          <string>Holds the transform matrices from the selected nodes.</string>
          </property>
          <property name="text">
           <string>Hold Transform</string>
@@ -344,7 +266,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Fetches the internal transform and applies it to the selected node.</string>
+          <string>Fetches the transform matrices and applies it to the selected node.</string>
          </property>
          <property name="text">
           <string>Fetch Transform</string>
@@ -439,6 +361,375 @@
       </layout>
      </widget>
     </item>
+    <item>
+     <widget class="QGroupBox" name="mirrorPoseGroupBox">
+      <property name="title">
+       <string>Mirror Pose:</string>
+      </property>
+      <layout class="QGridLayout" name="mirrorPoseLayout">
+       <item row="0" column="0">
+        <widget class="QPushButton" name="mirrorPosePushButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Mirrors the pose to the opposite nodes.</string>
+         </property>
+         <property name="text">
+          <string>Mirror Pose</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QWidget" name="endTimeWidget" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="endTimeLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="endTimeCheckBox">
+            <property name="minimumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Determines if the current time or a custom time should be used.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTimeSpinBox" name="endTimeSpinBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Specify the end frame to mirror animation from.</string>
+            </property>
+            <property name="suffix">
+             <string/>
+            </property>
+            <property name="prefix">
+             <string>End: </string>
+            </property>
+            <property name="minimum">
+             <number>-9999</number>
+            </property>
+            <property name="maximum">
+             <number>9999</number>
+            </property>
+            <property name="value">
+             <number>1</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="pullAnimationPushButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Pulls the animation from the opposite nodes.</string>
+         </property>
+         <property name="text">
+          <string>Pull Animation</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QWidget" name="insertTimeWidget" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="insertTimeLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="insertTimeCheckBox">
+            <property name="minimumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="insertTimeSpinBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="prefix">
+             <string>Insert At: </string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="mirrorAnimationPushButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Mirrors the animation to the opposite nodes.</string>
+         </property>
+         <property name="text">
+          <string>Mirror Animation</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QWidget" name="startTimeWidget" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <layout class="QHBoxLayout" name="startTimeLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="startTimeCheckBox">
+            <property name="minimumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>20</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Determines if the current time or a custom time should be used.</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTimeSpinBox" name="startTimeSpinBox">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>20</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Specify the start frame to mirror animation from.</string>
+            </property>
+            <property name="suffix">
+             <string/>
+            </property>
+            <property name="prefix">
+             <string>Start: </string>
+            </property>
+            <property name="minimum">
+             <number>-9999</number>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="pullPosePushButton">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Pulls the pose from the opposite nodes.</string>
+         </property>
+         <property name="text">
+          <string>Pull Pose</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QCheckBox" name="useCurrentTimeCheckBox">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>20</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Use Current Time</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="mainMenuBar">
@@ -470,8 +761,8 @@
     <addaction name="useSelectedNamespaceAction"/>
     <addaction name="useCurrentNamespaceAction"/>
     <addaction name="separator"/>
-    <addaction name="changeControllerPatternsAction"/>
-    <addaction name="changeResolutionOrderAction"/>
+    <addaction name="editControllerPatternsAction"/>
+    <addaction name="editControllerPriorityAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="settingsMenu"/>
@@ -487,14 +778,14 @@
     <string>Set Project Folder</string>
    </property>
   </action>
-  <action name="changeResolutionOrderAction">
+  <action name="editControllerPriorityAction">
    <property name="text">
-    <string>Change Resolution Order</string>
+    <string>Edit Controller Priority</string>
    </property>
   </action>
-  <action name="changeControllerPatternsAction">
+  <action name="editControllerPatternsAction">
    <property name="text">
-    <string>Change Controller Patterns</string>
+    <string>Edit Controller Patterns</string>
    </property>
   </action>
   <actiongroup name="namespaceActionGroup">
@@ -533,8 +824,64 @@
    </property>
   </actiongroup>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QTimeSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>dcc/ui/qtimespinbox.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>startTimeCheckBox</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>startTimeSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>28</x>
+     <y>594</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>95</x>
+     <y>594</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>endTimeCheckBox</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>endTimeSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>162</x>
+     <y>594</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>229</x>
+     <y>594</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>insertTimeCheckBox</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>insertTimeSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>28</x>
+     <y>620</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>95</x>
+     <y>620</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
  <buttongroups>
   <buttongroup name="transformButtonGroup">
    <property name="exclusive">
