@@ -1,9 +1,13 @@
 from maya.api import OpenMaya as om
-from mpy import mpynode, mpyfactory, mpycontext
+from mpy import mpynode, mpyfactory
 from copy import copy, deepcopy
 from dcc.json import psonobject
+from dcc.python import stringutils
 from dcc.dataclasses import keyframe
-from dcc.maya.libs import plugutils, plugmutators
+from dcc.collections import notifylist
+from dcc.generators.inclusiverange import inclusiveRange
+from dcc.maya.libs import plugutils, plugmutators, transformutils
+from dcc.maya.decorators.animate import animate
 
 import logging
 logging.basicConfig()
@@ -18,6 +22,7 @@ class Pose(psonobject.PSONObject):
 
     # region Dunderscores
     __slots__ = (
+        '__weakref__',
         '_scene',
         '_name',
         '_filePath',
@@ -40,9 +45,19 @@ class Pose(psonobject.PSONObject):
         self._name = kwargs.get('name', self.scene.name)
         self._filePath = kwargs.get('filePath', self.scene.filePath)
         self._animationRange = kwargs.get('animationRange', self.scene.animationRange)
-        self._nodes = kwargs.get('nodes', [])
-        self._animLayers = kwargs.get('animLayers', [])
+        self._nodes = notifylist.NotifyList()
+        self._animLayers = notifylist.NotifyList()
         self._thumbnail = kwargs.get('thumbnail', None)
+
+        # Setup notifies
+        #
+        self._nodes.addCallback('itemAdded', self.nodeAdded)
+        self._nodes.addCallback('itemRemoved', self.nodeRemoved)
+        self._nodes.extend(kwargs.get('nodes', []))
+
+        self._animLayers.addCallback('itemAdded', self.animLayerAdded)
+        self._animLayers.addCallback('itemRemoved', self.animLayerRemoved)
+        self._animLayers.extend(kwargs.get('animLayers', []))
 
         # Call parent method
         #
@@ -168,6 +183,50 @@ class Pose(psonobject.PSONObject):
         self._animLayers.extend(animLayers)
     # endregion
 
+    # region Callbacks
+    def nodeAdded(self, index, node):
+        """
+        Node added callback.
+
+        :type index: int
+        :type node: PoseNode
+        :rtype: None
+        """
+
+        node._pose = self.weakReference()
+
+    def nodeRemoved(self, node):
+        """
+        Node removed callback.
+
+        :type node: PoseNode
+        :rtype: None
+        """
+
+        node._pose = self.nullWeakReference
+
+    def animLayerAdded(self, index, animLayer):
+        """
+        Animation layer added callback.
+
+        :type index: int
+        :type animLayer: PoseAnimLayer
+        :rtype: None
+        """
+
+        animLayer._pose = self.weakReference()
+
+    def animLayerRemoved(self, animLayer):
+        """
+        Node removed callback.
+
+        :type animLayer: PoseAnimLayer
+        :rtype: None
+        """
+
+        animLayer._pose = self.nullWeakReference
+    # endregion
+
     # region Methods
     def getAssociatedNodes(self, namespace=None):
         """
@@ -207,24 +266,72 @@ class Pose(psonobject.PSONObject):
 
         self.scene.setSelection([node.object() for node in self.getAssociatedNodes(namespace=namespace)])
 
-    def getPoseByName(self, name):
+    def getPoseByName(self, name, namespace='', ignoreCase=False):
         """
         Returns the pose node with the specified name.
 
         :type name: str
+        :type namespace: str
+        :type ignoreCase: bool
         :rtype: Union[PoseNode, None]
         """
 
-        found = [pose for pose in self.nodes if pose.name == name]
+        # Find poses with matching names
+        #
+        found = None
+
+        if ignoreCase:
+
+            found = [pose for pose in self.nodes if pose.name.lower() == name.lower()]
+
+        else:
+
+            found = [pose for pose in self.nodes if pose.name == name]
+
+        # Inspect collected poses
+        #
         numFound = len(found)
 
-        if numFound == 1:
+        if numFound == 0:
+
+            return None
+
+        elif numFound == 1:
 
             return found[0]
 
         else:
 
-            return None
+            filtered = [pose for pose in found if pose.namespace == namespace]
+            numFiltered = len(filtered)
+
+            return filtered[0] if numFiltered == 1 else None
+
+    def iterAssociatedPoses(self, *nodes, **kwargs):
+        """
+        Returns a generator that yield node-pose pairs.
+
+        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
+        :rtype: Iterator[Tuple[mpynode.MPyNode, PoseNode]]
+        """
+
+        # Iterate through nodes
+        #
+        for node in nodes:
+
+            # Check if pose exists
+            #
+            name = node.name()
+            pose = self.getPoseByName(name)
+
+            if pose is not None:
+
+                yield node, pose
+
+            else:
+
+                log.warning(f'Cannot find pose for "{name}" node!')
+                continue
 
     def getKeyframeInputs(self):
         """
@@ -282,7 +389,7 @@ class Pose(psonobject.PSONObject):
 
         return blendPose
 
-    def applyTo(self, *nodes):
+    def applyTo(self, *nodes, **kwargs):
         """
         Applies this pose to the supplied nodes.
 
@@ -292,21 +399,11 @@ class Pose(psonobject.PSONObject):
 
         # Iterate through nodes
         #
-        for node in nodes:
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
 
-            # Check if pose exists for node
-            #
-            pose = self.getPoseByName(node)
+            pose.applyValues(node, **kwargs)
 
-            if pose is not None:
-
-                pose.applyValues(node)
-
-            else:
-
-                continue
-
-    def applyRelativeTo(self, nodes, relativeTo):
+    def applyRelativeTo(self, nodes, relativeTo, **kwargs):
         """
         Applies this pose relative to the specified node.
         This method expects the nodes to already be ordered based on priority!
@@ -336,15 +433,7 @@ class Pose(psonobject.PSONObject):
         #
         worldMatrix = relativeTo.worldMatrix()
 
-        for node in nodes:
-
-            # Check if pose exists for node
-            #
-            pose = self.getPoseByName(node.name())
-
-            if pose is None:
-
-                continue
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
 
             # Calculate matrix based on offset matrix
             #
@@ -352,11 +441,11 @@ class Pose(psonobject.PSONObject):
             relativeMatrix = offsetMatrix * worldMatrix
             matrix = relativeMatrix * node.parentInverseMatrix()
 
-            node.setMatrix(matrix)
+            node.setMatrix(matrix, **kwargs)
 
-    def applyTransformsTo(self, *nodes, **kwargs):
+    def applyMatricesTo(self, *nodes, **kwargs):
         """
-        Applies the transform values to the supplied nodes.
+        Applies the matrix values to the supplied nodes.
 
         :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
         :key worldSpace: bool
@@ -367,27 +456,93 @@ class Pose(psonobject.PSONObject):
         #
         worldSpace = kwargs.get('worldSpace', False)
 
-        for node in nodes:
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
 
-            # Check if pose exists
-            #
-            name = node.name()
-            pose = self.getPoseByName(name)
-
-            if pose is None:
-
-                log.warning('Cannot locate pose for "%s" node!' % name)
-                continue
-
-            # Check if world-matrix should be applied
+            # Evaluate which transform space to use
             #
             if worldSpace:
 
-                pose.applyWorldMatrix(node)
+                pose.applyWorldMatrix(node, **kwargs)
 
             else:
 
-                pose.applyMatrix(node)
+                pose.applyMatrix(node, **kwargs)
+
+    def applyTransformationsTo(self, *nodes, **kwargs):
+        """
+        Applies the transform values to the supplied nodes.
+
+        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
+        :key worldSpace: bool
+        :rtype: None
+        """
+
+        # Iterate through nodes
+        #
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+
+            pose.applyTransformations(node, **kwargs)
+
+    @animate
+    def bakeTransformationsTo(self, *nodes, **kwargs):
+        """
+        Bakes the transform values to the supplied nodes.
+        TODO: Implement support for decimal frames when preserving keys!
+
+        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
+        :key startTime: int
+        :key endTime: int
+        :key step: int
+        :key snapKeys: bool
+        :key preserveKeys: bool
+        :rtype: None
+        """
+
+        # Check if keys should be preserved
+        #
+        preserveKeys = kwargs.get('preserveKeys', False)
+        times = None
+
+        if preserveKeys:
+
+            # Get keyframe inputs
+            #
+            times = [time for time in self.getKeyframeInputs()]
+
+        else:
+
+            # Get animation range
+            #
+            startTime = kwargs.get('startTime', self.animationRange[0])
+            endTime = kwargs.get('endTime', self.animationRange[1])
+            step = kwargs.get('step', 1)
+
+            times = list(inclusiveRange(startTime, endTime, step))
+
+        # Iterate through time inputs
+        #
+        for (i, time) in enumerate(times):
+
+            # Go to time
+            #
+            self.scene.time = time
+
+            # Iterate through nodes
+            #
+            for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+
+                # Check if keys should be cleared
+                #
+                if i == 0:
+
+                    node.clearKeys(animationRange=self.animationRange, skipUserAttributes=True)
+
+                # Apply transform at time
+                #
+                worldMatrix = pose.getTransformation(time)
+                matrix = worldMatrix * node.parentInverseMatrix()
+
+                node.setMatrix(matrix, skipScale=True)
 
     def applyAnimationRange(self):
         """
@@ -398,7 +553,7 @@ class Pose(psonobject.PSONObject):
 
         self.scene.animationRange = self.animationRange
 
-    def applyAnimationTo(self, *nodes, insertAt=None):
+    def applyAnimationTo(self, *nodes, insertAt=None, **kwargs):
         """
         Updates the animation keys to the supplied nodes.
 
@@ -406,41 +561,25 @@ class Pose(psonobject.PSONObject):
         :rtype: None
         """
 
-        # Check if offset is required
-        #
-        offset = 0
-
-        if insertAt is not None:
-
-            inputs = self.getKeyframeInputs()
-            offset = insertAt - inputs[0]
-
         # Iterate through nodes
         #
-        for node in nodes:
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
 
-            # Check if pose exists for node
-            #
-            pose = self.getPoseByName(node)
-
-            if pose is not None:
-
-                pose.applyKeyframes(node, offset=offset)
-
-            else:
-
-                continue
+            pose.applyKeyframes(node, insertAt=insertAt)
 
     @classmethod
     def create(cls, *nodes, **kwargs):
         """
         Returns a new pose using the supplied nodes.
 
-        :type nodes: Union[mpynode.MPyNode, Tuple[mpynode.MPyNode]]
+        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
         :rtype: Pose
         """
 
-        return cls(nodes=[PoseNode.create(node, **kwargs) for node in nodes], **kwargs)
+        instance = cls(**kwargs)
+        instance.nodes = [PoseNode.create(node, **kwargs) for node in nodes]
+
+        return instance
     # endregion
 
 
@@ -451,6 +590,7 @@ class PoseNode(psonobject.PSONObject):
 
     # region Dunderscores
     __slots__ = (
+        '_pose',
         '_name',
         '_namespace',
         '_uuid',
@@ -470,6 +610,7 @@ class PoseNode(psonobject.PSONObject):
 
         # Declare private variables
         #
+        self._pose = self.nullWeakReference
         self._name = kwargs.get('name', '')
         self._namespace = kwargs.get('namespace', '')
         self._uuid = kwargs.get('uuid', '')
@@ -477,7 +618,7 @@ class PoseNode(psonobject.PSONObject):
         self._attributes = kwargs.get('attributes', [])
         self._matrix = kwargs.get('matrix', om.MMatrix.kIdentity)
         self._worldMatrix = kwargs.get('worldMatrix', om.MMatrix.kIdentity)
-        self._transformations = {}
+        self._transformations = kwargs.get('transformations', {})
 
         # Call parent method
         #
@@ -485,6 +626,26 @@ class PoseNode(psonobject.PSONObject):
     # endregion
 
     # region Properties
+    @property
+    def pose(self):
+        """
+        Getter method that returns the associated pose.
+
+        :rtype: Pose
+        """
+
+        return self._pose()
+
+    @property
+    def scene(self):
+        """
+        Getter method that returns the scene interface.
+
+        :rtype: mpyfactory.MPyFactory
+        """
+
+        return self.pose.scene
+
     @property
     def name(self):
         """
@@ -632,6 +793,28 @@ class PoseNode(psonobject.PSONObject):
         """
 
         self._worldMatrix = om.MMatrix(worldMatrix)
+
+    @property
+    def transformations(self):
+        """
+        Getter method that returns the transformations for this pose node.
+
+        :rtype: Dict[int, om.MMatrix]
+        """
+
+        return self._transformations
+
+    @transformations.setter
+    def transformations(self, transformations):
+        """
+        Setter method that updates the transformations for this pose node.
+
+        :type transformations: Dict[int, om.MMatrix]
+        :rtype: None
+        """
+
+        self._transformations.clear()
+        self._transformations.update({stringutils.eval(key): value for (key, value) in transformations.items()})
     # endregion
 
     # region Methods
@@ -686,6 +869,54 @@ class PoseNode(psonobject.PSONObject):
 
         return list(inputs)
 
+    def getTransformation(self, time):
+        """
+        Returns the transformation at the specified time.
+
+        :type time: Union[int, float]
+        :rtype: om.MMatrix
+        """
+
+        # Check if transformation exists
+        #
+        matrix = self.transformations.get(time, None)
+
+        if matrix is not None:
+
+            return matrix
+
+        # Get time inputs
+        #
+        times = list(self.transformations.keys())
+        numTimes = len(times)
+
+        if numTimes == 0:
+
+            return om.MMatrix.kIdentity
+
+        # Check if time is in range
+        #
+        firstTime, lastTime = times[0], times[-1]
+
+        if firstTime < time < lastTime:
+
+            startTime, endTime = [(times[i], times[i + 1]) for i in range(numTimes - 1) if times[i] <= time <= times[i + 1]][0]
+            weight = (time - startTime) / (endTime - startTime)
+
+            return transformutils.lerpMatrix(self.transformations[startTime], self.transformations[endTime], weight)
+
+        elif time <= firstTime:
+
+            return self.transformations[firstTime]
+
+        elif time >= lastTime:
+
+            return self.transformations[lastTime]
+
+        else:
+
+            raise TypeError('getTransformation() cannot locate a valid transformation!')
+
     def applyValues(self, node):
         """
         Applies the attribute values to the supplied node.
@@ -709,12 +940,13 @@ class PoseNode(psonobject.PSONObject):
                 log.warning(f'Cannot locate "{attribute.name}" attribute on "{node.name()}" node!')
                 continue
 
-    def applyKeyframes(self, node, offset=0):
+    def applyKeyframes(self, node, insertAt=None, skipUserAttributes=False):
         """
         Applies the attribute keyframes to the supplied node.
 
         :type node: mpynode.MPyNode
-        :type offset: int
+        :type insertAt: Union[int, None]
+        :type skipUserAttributes: bool
         :rtype: None
         """
 
@@ -722,25 +954,42 @@ class PoseNode(psonobject.PSONObject):
         #
         for attribute in self.attributes:
 
-            # Check if attribute had animation
+            # Check if attribute has animation
             #
-            if attribute.animCurve is None:
+            if len(attribute.keyframes) == 0:
 
                 continue
 
             # Check if attribute exists
             #
-            if node.hasAttr(attribute.name):
+            if not node.hasAttr(attribute.name):
 
-                animCurve = node.keyAttr(attribute.name, attribute.value)
-                keys = [key.copy(time=(key.time + offset)) for key in attribute.keyframes]
+                log.warning(f'Cannot locate "{attribute.name}" attribute from "{node.name()}" node!')
+                continue
 
-                animCurve.replaceKeys(keys, clear=True)
+            # Check if user attributes should be skipped
+            #
+            plug = node.findPlug(attribute.name)
+
+            if skipUserAttributes and plug.isDynamic:
+
+                log.debug(f'Skipping "{attribute.name}" user attribute on "{node.name()}" node!')
+                continue
+
+            # Apply keyframes to animation curve
+            #
+            animCurve = node.findAnimCurve(plug, ensure=True)
+
+            if insertAt is not None:
+
+                difference = insertAt - self.pose.animationRange[0]
+                keyframes = [key.copy(time=(key.time + difference)) for key in attribute.keyframes]
+                
+                animCurve.replaceKeys(keyframes, clear=True)
 
             else:
 
-                log.warning(f'Cannot locate "{attribute.name}" attribute on "{node.name()}" node!')
-                continue
+                animCurve.replaceKeys(attribute.keyframes, clear=True)
 
     def applyMatrix(self, node, **kwargs):
         """
@@ -760,7 +1009,107 @@ class PoseNode(psonobject.PSONObject):
         :rtype: None
         """
 
-        node.setMatrix(self.worldMatrix * node.parentInverseMatrix(), **kwargs)
+        matrix = self.worldMatrix * node.parentInverseMatrix()
+        node.setMatrix(matrix, **kwargs)
+
+    def applyTransformations(self, node, **kwargs):
+        """
+        Applies the transformations to the supplied node.
+
+        :type node: mpynode.MPyNode
+        :rtype: None
+        """
+
+        # Apply and synchronize keyframes
+        #
+        self.applyKeyframes(node, skipUserAttributes=True)
+        node.syncTransformKeys()
+
+        # Resample position values
+        #
+        skipTranslate = kwargs.get('skipTranslate', False)
+
+        if not skipTranslate:
+
+            # Get translate plugs
+            #
+            plug = node.findPlug('translate')
+            children = tuple(plugutils.iterChildren(plug))
+
+            # Iterate through time inputs
+            #
+            xAnimCurve, yAnimCurve, zAnimCurve = list(map(lambda x: self.scene(x.source().node()), children))
+            times = list(map(int, xAnimCurve.inputs()))
+
+            for (i, time) in enumerate(times):
+
+                # Get bezier point in local space
+                #
+                point = om.MPoint(xAnimCurve.value(i), yAnimCurve.value(i), zAnimCurve.value(i))
+
+                inTangent = om.MPoint(
+                    -(xAnimCurve.getTangentXY(i, True)[1] / 3.0),
+                    -(yAnimCurve.getTangentXY(i, True)[1] / 3.0),
+                    -(zAnimCurve.getTangentXY(i, True)[1] / 3.0)
+                )
+
+                outTangent = om.MPoint(
+                    (xAnimCurve.getTangentXY(i, False)[1] / 3.0),
+                    (yAnimCurve.getTangentXY(i, False)[1] / 3.0),
+                    (zAnimCurve.getTangentXY(i, False)[1] / 3.0)
+                )
+
+                # Transform bezier point
+                #
+                worldMatrix = self.transformations[time]
+                parentInverseMatrix = node.parentInverseMatrix(time=time)
+
+                currentMatrix = node.matrix(time=time)
+                targetMatrix = worldMatrix * parentInverseMatrix
+                transformMatrix = currentMatrix * targetMatrix.inverse()
+
+                point *= transformMatrix
+                inTangent *= transformMatrix
+                outTangent *= transformMatrix
+
+                # Update values on anim curve
+                #
+                xAnimCurve.setValue(i, point.x)
+                xAnimCurve.setWeightsLocked(i, False)
+                xAnimCurve.setTangentsLocked(i, False)
+                xAnimCurve.setTangent(i, xAnimCurve.getTangentXY(i, True)[0], -((inTangent.x - point.x) * 3.0), True, convertUnits=False)
+                xAnimCurve.setTangent(i, xAnimCurve.getTangentXY(i, False)[0], ((outTangent.x - point.x) * 3.0), False, convertUnits=False)
+                xAnimCurve.setTangentsLocked(i, True)
+                
+                yAnimCurve.setValue(i, point.y)
+                yAnimCurve.setWeightsLocked(i, False)
+                yAnimCurve.setTangentsLocked(i, False)
+                yAnimCurve.setTangent(i, yAnimCurve.getTangentXY(i, True)[0], -((inTangent.y - point.y) * 3.0), True, convertUnits=False)
+                yAnimCurve.setTangent(i, yAnimCurve.getTangentXY(i, False)[0], ((outTangent.y - point.y) * 3.0), False, convertUnits=False)
+                yAnimCurve.setTangentsLocked(i, True)
+
+                zAnimCurve.setValue(i, point.z)
+                zAnimCurve.setWeightsLocked(i, False)
+                zAnimCurve.setTangentsLocked(i, False)
+                zAnimCurve.setTangent(i, zAnimCurve.getTangentXY(i, True)[0], -((inTangent.z - point.z) * 3.0), True, convertUnits=False)
+                zAnimCurve.setTangent(i, zAnimCurve.getTangentXY(i, False)[0], ((outTangent.z - point.z) * 3.0), False, convertUnits=False)
+                zAnimCurve.setTangentsLocked(i, True)
+
+        else:
+
+            log.debug(f'Skipping "{node.name()}.translate" key resampling!')
+
+        # Resample rotation values
+        #
+        skipRotate = kwargs.get('skipRotate', False)
+
+        if not skipRotate:
+
+            pass
+
+        else:
+
+            log.debug(f'Skipping "{node.name()}.rotate" key resampling!')
 
     @classmethod
     def create(cls, node, **kwargs):
@@ -771,6 +1120,23 @@ class PoseNode(psonobject.PSONObject):
         :rtype: PoseNode
         """
 
+        # Check if transformations should be cached
+        #
+        skipKeys = kwargs.get('skipKeys', True)
+        skipTransformations = kwargs.get('skipTransformations', True)
+
+        transformations = {}
+
+        if not skipTransformations and not skipKeys:
+
+            animationRange = kwargs.get('animationRange', None)
+            step = kwargs.get('step', 1)
+
+            log.debug(f'Caching "{node.name()}" transformations!')
+            transformations = node.cacheTransformations(animationRange=animationRange, step=step, worldSpace=True)
+
+        # Return new pose node
+        #
         return cls(
             name=node.name(),
             namespace=node.namespace(),
@@ -778,7 +1144,8 @@ class PoseNode(psonobject.PSONObject):
             path=node.dagPath().fullPathName(),
             attributes=[PoseAttribute.create(plug, **kwargs) for plug in node.iterPlugs(channelBox=True)],
             matrix=node.matrix(),
-            worldMatrix=node.worldMatrix()
+            worldMatrix=node.worldMatrix(),
+            transformations=transformations
         )
     # endregion
 
@@ -948,7 +1315,7 @@ class PoseAttribute(psonobject.PSONObject):
             animCurve = mpynode.MPyNode(plug.source().node())
             preInfinityType = animCurve.preInfinity,
             postInfinityType = animCurve.postInfinity,
-            keyframes = animCurve.cacheKeys()
+            keyframes = animCurve.getKeys()
 
         # Return new pose attribute
         #
@@ -967,4 +1334,383 @@ class PoseAnimLayer(psonobject.PSONObject):
     Overload of `PSONObject` that interfaces with pose anim layer data.
     """
 
-    __slots__ = ()
+    # region Dunderscores
+    __slots__ = (
+        '_name',
+        '_parent',
+        '_children',
+        '_members',
+        '_mute',
+        '_solo',
+        '_lock',
+        '_ghost',
+        '_ghostColor',
+        '_override',
+        '_passthrough',
+        '_weight',
+        '_rotationAccumulationMode',
+        '_scaleAccumulationMode'
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        Private method called after a new instance is created.
+
+        :rtype: None
+        """
+
+        # Declare private variables
+        #
+        self._pose = self.nullWeakReference
+        self._name = kwargs.get('name', '')
+        self._parent = kwargs.get('parent', self.nullWeakReference)
+        self._children = notifylist.NotifyList()
+        self._members = notifylist.NotifyList()
+        self._mute = kwargs.get('mute', False)
+        self._solo = kwargs.get('solo', False)
+        self._lock = kwargs.get('lock', False)
+        self._ghost = kwargs.get('ghost', False)
+        self._ghostColor = kwargs.get('ghostColor', 5)
+        self._override = kwargs.get('override', False)
+        self._passthrough = kwargs.get('passthrough', True)
+        self._weight = kwargs.get('weight', 1.0)
+        self._rotationAccumulationMode = kwargs.get('rotationAccumulationMode', 0)
+        self._scaleAccumulationMode = kwargs.get('scaleAccumulationMode', 1)
+
+        # Setup notifies
+        #
+        self._children.addCallback('itemAdded', self.layerAdded)
+        self._children.addCallback('itemRemoved', self.layerRemoved)
+        self._children.extend(kwargs.get('children', []))
+
+        self._members.addCallback('itemAdded', self.memberAdded)
+        self._members.addCallback('itemRemoved', self.memberRemoved)
+        self._members.extend(kwargs.get('members', []))
+
+        # Call parent method
+        #
+        super(PoseAnimLayer, self).__init__(*args, **kwargs)
+    # endregion
+
+    # region Properties
+    @property
+    def name(self):
+        """
+        Getter method that returns the name of this layer.
+
+        :rtype: str
+        """
+
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        """
+        Setter method that updates the name for this layer.
+
+        :type name: str
+        :rtype: None
+        """
+
+        self._name = name
+
+    @property
+    def parent(self):
+        """
+        Getter method that returns the parent of this layer.
+
+        :rtype: PoseAnimLayer
+        """
+
+        return self._parent()
+
+    @property
+    def children(self):
+        """
+        Getter method that returns the children from this layer.
+
+        :rtype: List[PoseAnimLayer]
+        """
+
+        return self._name
+
+    @children.setter
+    def children(self, children):
+        """
+        Setter method that updates the children for this layer.
+
+        :type children: List[PoseAnimLayer]
+        :rtype: None
+        """
+
+        self._children.clear()
+        self._children.extend(children)
+
+    @property
+    def mute(self):
+        """
+        Getter method that returns the mute flag from this layer.
+
+        :rtype: bool
+        """
+
+        return self._mute
+
+    @mute.setter
+    def mute(self, mute):
+        """
+        Setter method that updates the mute flag for this layer.
+
+        :type mute: bool
+        :rtype: None
+        """
+
+        self._mute = mute
+
+    @property
+    def solo(self):
+        """
+        Getter method that returns the solo flag from this layer.
+
+        :rtype: bool
+        """
+
+        return self._solo
+
+    @solo.setter
+    def solo(self, solo):
+        """
+        Setter method that updates the solo flag for this layer.
+
+        :type solo: bool
+        :rtype: None
+        """
+
+        self._solo = solo
+
+    @property
+    def lock(self):
+        """
+        Getter method that returns the lock flag from this layer.
+
+        :rtype: bool
+        """
+
+        return self._lock
+
+    @lock.setter
+    def lock(self, lock):
+        """
+        Setter method that updates the lock flag for this layer.
+
+        :type lock: bool
+        :rtype: None
+        """
+
+        self._lock = lock
+
+    @property
+    def ghost(self):
+        """
+        Getter method that returns the ghost flag from this layer.
+
+        :rtype: bool
+        """
+
+        return self._ghost
+
+    @ghost.setter
+    def ghost(self, ghost):
+        """
+        Setter method that updates the ghost flag for this layer.
+
+        :type ghost: bool
+        :rtype: None
+        """
+
+        self._ghost = ghost
+
+    @property
+    def ghostColor(self):
+        """
+        Getter method that returns the ghost color from this layer.
+
+        :rtype: int
+        """
+
+        return self._ghostColor
+
+    @ghostColor.setter
+    def ghostColor(self, ghostColor):
+        """
+        Setter method that updates the ghost color for this layer.
+
+        :type ghostColor: int
+        :rtype: None
+        """
+
+        self._ghostColor = ghostColor
+
+    @property
+    def override(self):
+        """
+        Getter method that returns the override flag from this layer.
+
+        :rtype: bool
+        """
+
+        return self._override
+
+    @override.setter
+    def override(self, override):
+        """
+        Setter method that updates the override flag for this layer.
+
+        :type override: bool
+        :rtype: None
+        """
+
+        self._override = override
+
+    @property
+    def passthrough(self):
+        """
+        Getter method that returns the passthrough flag from this layer.
+
+        :rtype: bool
+        """
+
+        return self._passthrough
+
+    @passthrough.setter
+    def passthrough(self, passthrough):
+        """
+        Setter method that updates the passthrough flag for this layer.
+
+        :type passthrough: bool
+        :rtype: None
+        """
+
+        self._passthrough = passthrough
+
+    @property
+    def weight(self):
+        """
+        Getter method that returns the blend weight from this layer.
+
+        :rtype: float
+        """
+
+        return self._weight
+
+    @weight.setter
+    def weight(self, weight):
+        """
+        Setter method that updates the blend weight for this layer.
+
+        :type weight: float
+        :rtype: None
+        """
+
+        self._weight = weight
+
+    @property
+    def rotationAccumulationMode(self):
+        """
+        Getter method that returns the rotation-accumulation mode from this layer.
+
+        :rtype: int
+        """
+
+        return self._rotationAccumulationMode
+
+    @rotationAccumulationMode.setter
+    def rotationAccumulationMode(self, rotationAccumulationMode):
+        """
+        Setter method that updates the rotation-accumulation mode for this layer.
+
+        :type rotationAccumulationMode: int
+        :rtype: None
+        """
+
+        self._rotationAccumulationMode = rotationAccumulationMode
+        
+    @property
+    def scaleAccumulationMode(self):
+        """
+        Getter method that returns the scale-accumulation mode from this layer.
+
+        :rtype: int
+        """
+
+        return self._scaleAccumulationMode
+
+    @scaleAccumulationMode.setter
+    def scaleAccumulationMode(self, scaleAccumulationMode):
+        """
+        Setter method that updates the scale-accumulation mode for this layer.
+
+        :type scaleAccumulationMode: int
+        :rtype: None
+        """
+
+        self._scaleAccumulationMode = scaleAccumulationMode
+    # endregion
+
+    # region Callbacks
+    def layerAdded(self, index, layer):
+        """
+        Node added callback.
+
+        :type index: int
+        :type layer: PoseAnimLayer
+        :rtype: None
+        """
+
+        layer._parent = self.weakReference()
+
+    def layerRemoved(self, layer):
+        """
+        Node removed callback.
+
+        :type layer: PoseAnimLayer
+        :rtype: None
+        """
+
+        layer._parent = self.nullWeakReference
+
+    def memberAdded(self, index, member):
+        """
+        Node added callback.
+
+        :type index: int
+        :type member: PoseMember
+        :rtype: None
+        """
+
+        pass
+
+    def memberRemoved(self, member):
+        """
+        Node removed callback.
+
+        :type member: PoseMember
+        :rtype: None
+        """
+
+        pass
+    # endregion
+
+    # region Methods
+    @classmethod
+    def create(cls, layer, nodes=None):
+        """
+        Returns a new pose layer using the supplied layer.
+
+        :type layer: mpynode.MPyNode
+        :type nodes: Union[List[mpynode.MPyNode], None]
+        :rtype: PoseAnimLayer
+        """
+
+        pass
+    # endregion
