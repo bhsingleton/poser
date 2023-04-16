@@ -8,6 +8,7 @@ from dcc.collections import notifylist
 from dcc.generators.inclusiverange import inclusiveRange
 from dcc.maya.libs import plugutils, plugmutators, transformutils
 from dcc.maya.decorators.animate import animate
+from dcc.maya.decorators.undo import undo
 
 import logging
 logging.basicConfig()
@@ -389,6 +390,7 @@ class Pose(psonobject.PSONObject):
 
         return blendPose
 
+    @undo(name='Apply Pose')
     def applyTo(self, *nodes, **kwargs):
         """
         Applies this pose to the supplied nodes.
@@ -403,6 +405,7 @@ class Pose(psonobject.PSONObject):
 
             pose.applyValues(node, **kwargs)
 
+    @undo(name='Apply Relative Pose')
     def applyRelativeTo(self, nodes, relativeTo, **kwargs):
         """
         Applies this pose relative to the specified node.
@@ -443,6 +446,7 @@ class Pose(psonobject.PSONObject):
 
             node.setMatrix(matrix, **kwargs)
 
+    @undo(name='Apply Transform')
     def applyMatricesTo(self, *nodes, **kwargs):
         """
         Applies the matrix values to the supplied nodes.
@@ -467,21 +471,6 @@ class Pose(psonobject.PSONObject):
             else:
 
                 pose.applyMatrix(node, **kwargs)
-
-    def applyTransformationsTo(self, *nodes, **kwargs):
-        """
-        Applies the transform values to the supplied nodes.
-
-        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
-        :key worldSpace: bool
-        :rtype: None
-        """
-
-        # Iterate through nodes
-        #
-        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
-
-            pose.applyTransformations(node, **kwargs)
 
     @animate
     def bakeTransformationsTo(self, *nodes, **kwargs):
@@ -917,11 +906,12 @@ class PoseNode(psonobject.PSONObject):
 
             raise TypeError('getTransformation() cannot locate a valid transformation!')
 
-    def applyValues(self, node):
+    def applyValues(self, node, **kwargs):
         """
         Applies the attribute values to the supplied node.
 
         :type node: mpynode.MPyNode
+        :key modifier: Union[om.MDGModifier, None]
         :rtype: None
         """
 
@@ -940,18 +930,21 @@ class PoseNode(psonobject.PSONObject):
                 log.warning(f'Cannot locate "{attribute.name}" attribute on "{node.name()}" node!')
                 continue
 
-    def applyKeyframes(self, node, insertAt=None, skipUserAttributes=False):
+    def applyKeyframes(self, node, **kwargs):
         """
         Applies the attribute keyframes to the supplied node.
 
         :type node: mpynode.MPyNode
-        :type insertAt: Union[int, None]
-        :type skipUserAttributes: bool
+        :key insertAt: Union[int, None]
+        :key skipUserAttributes: bool
         :rtype: None
         """
 
         # Iterate through attributes
         #
+        insertAt = kwargs.get('insertAt', None)
+        skipUserAttributes = kwargs.get('skipUserAttributes', False)
+
         for attribute in self.attributes:
 
             # Check if attribute has animation
@@ -1011,105 +1004,6 @@ class PoseNode(psonobject.PSONObject):
 
         matrix = self.worldMatrix * node.parentInverseMatrix()
         node.setMatrix(matrix, **kwargs)
-
-    def applyTransformations(self, node, **kwargs):
-        """
-        Applies the transformations to the supplied node.
-
-        :type node: mpynode.MPyNode
-        :rtype: None
-        """
-
-        # Apply and synchronize keyframes
-        #
-        self.applyKeyframes(node, skipUserAttributes=True)
-        node.syncTransformKeys()
-
-        # Resample position values
-        #
-        skipTranslate = kwargs.get('skipTranslate', False)
-
-        if not skipTranslate:
-
-            # Get translate plugs
-            #
-            plug = node.findPlug('translate')
-            children = tuple(plugutils.iterChildren(plug))
-
-            # Iterate through time inputs
-            #
-            xAnimCurve, yAnimCurve, zAnimCurve = list(map(lambda x: self.scene(x.source().node()), children))
-            times = list(map(int, xAnimCurve.inputs()))
-
-            for (i, time) in enumerate(times):
-
-                # Get bezier point in local space
-                #
-                point = om.MPoint(xAnimCurve.value(i), yAnimCurve.value(i), zAnimCurve.value(i))
-
-                inTangent = om.MPoint(
-                    -(xAnimCurve.getTangentXY(i, True)[1] / 3.0),
-                    -(yAnimCurve.getTangentXY(i, True)[1] / 3.0),
-                    -(zAnimCurve.getTangentXY(i, True)[1] / 3.0)
-                )
-
-                outTangent = om.MPoint(
-                    (xAnimCurve.getTangentXY(i, False)[1] / 3.0),
-                    (yAnimCurve.getTangentXY(i, False)[1] / 3.0),
-                    (zAnimCurve.getTangentXY(i, False)[1] / 3.0)
-                )
-
-                # Transform bezier point
-                #
-                worldMatrix = self.transformations[time]
-                parentInverseMatrix = node.parentInverseMatrix(time=time)
-
-                currentMatrix = node.matrix(time=time)
-                targetMatrix = worldMatrix * parentInverseMatrix
-                transformMatrix = currentMatrix * targetMatrix.inverse()
-
-                point *= transformMatrix
-                inTangent *= transformMatrix
-                outTangent *= transformMatrix
-
-                # Update values on anim curve
-                #
-                xAnimCurve.setValue(i, point.x)
-                xAnimCurve.setWeightsLocked(i, False)
-                xAnimCurve.setTangentsLocked(i, False)
-                xAnimCurve.setTangent(i, xAnimCurve.getTangentXY(i, True)[0], -((inTangent.x - point.x) * 3.0), True, convertUnits=False)
-                xAnimCurve.setTangent(i, xAnimCurve.getTangentXY(i, False)[0], ((outTangent.x - point.x) * 3.0), False, convertUnits=False)
-                xAnimCurve.setTangentsLocked(i, True)
-                
-                yAnimCurve.setValue(i, point.y)
-                yAnimCurve.setWeightsLocked(i, False)
-                yAnimCurve.setTangentsLocked(i, False)
-                yAnimCurve.setTangent(i, yAnimCurve.getTangentXY(i, True)[0], -((inTangent.y - point.y) * 3.0), True, convertUnits=False)
-                yAnimCurve.setTangent(i, yAnimCurve.getTangentXY(i, False)[0], ((outTangent.y - point.y) * 3.0), False, convertUnits=False)
-                yAnimCurve.setTangentsLocked(i, True)
-
-                zAnimCurve.setValue(i, point.z)
-                zAnimCurve.setWeightsLocked(i, False)
-                zAnimCurve.setTangentsLocked(i, False)
-                zAnimCurve.setTangent(i, zAnimCurve.getTangentXY(i, True)[0], -((inTangent.z - point.z) * 3.0), True, convertUnits=False)
-                zAnimCurve.setTangent(i, zAnimCurve.getTangentXY(i, False)[0], ((outTangent.z - point.z) * 3.0), False, convertUnits=False)
-                zAnimCurve.setTangentsLocked(i, True)
-
-        else:
-
-            log.debug(f'Skipping "{node.name()}.translate" key resampling!')
-
-        # Resample rotation values
-        #
-        skipRotate = kwargs.get('skipRotate', False)
-
-        if not skipRotate:
-
-            pass
-
-        else:
-
-            log.debug(f'Skipping "{node.name()}.rotate" key resampling!')
 
     @classmethod
     def create(cls, node, **kwargs):
