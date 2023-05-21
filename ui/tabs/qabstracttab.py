@@ -64,6 +64,15 @@ class QAbstractTab(quicwidget.QUicWidget):
 
         return self.window().cwd()
 
+    def customNamespace(self):
+        """
+        Returns the custom namespace.
+
+        :rtype: str
+        """
+
+        return self.window().customNamespace()
+
     def currentNamespace(self):
         """
         Returns the current namespace.
