@@ -6,6 +6,7 @@ from Qt import QtCore, QtWidgets, QtGui
 from dcc.ui import qrollout, qdivider, qtimespinbox, qxyzwidget, qseparator
 from dcc.python import stringutils
 from dcc.maya.libs import dagutils
+from dcc.maya.decorators.undo import undo
 from . import qabstracttab
 
 import logging
@@ -844,6 +845,27 @@ class QAlignTab(qabstracttab.QAbstractTab):
         for alignment in reversed(self.alignments()):
 
             alignment.deleteLater()
+
+    @undo(name='Align Transforms')
+    def align(self):
+        """
+        Executes any active alignments.
+
+        :rtype: None
+        """
+
+        # Check if any alignments are enabled
+        #
+        if self.evaluateNumAlignments() == 0:
+
+            log.warning('No alignments enabled!')
+            return
+
+        # Iterate through alignments
+        #
+        for alignment in self.iterAlignments(skipUnchecked=True):
+
+            alignment.apply()
     # endregion
 
     # region Slots
@@ -883,16 +905,5 @@ class QAlignTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Check if any alignments are enabled
-        #
-        if self.evaluateNumAlignments() == 0:
-
-            log.warning('No alignments enabled!')
-            return
-
-        # Iterate through alignments
-        #
-        for alignment in self.iterAlignments(skipUnchecked=True):
-
-            alignment.apply()
+        self.align()
     # endregion
