@@ -13,6 +13,10 @@ def createPose(*nodes, **kwargs):
     """
     Returns a new pose using the supplied nodes.
 
+    :key animationRange: Tuple[int, int]
+    :key step: int
+    :key skipKeys: bool
+    :key skipTransformation: bool
     :rtype: Pose
     """
 
