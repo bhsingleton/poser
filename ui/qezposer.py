@@ -5,10 +5,12 @@ import webbrowser
 from maya.api import OpenMaya as om
 from mpy import mpynode, mpyfactory
 from PySide2 import QtCore, QtWidgets, QtGui
+from six import string_types, integer_types
 from dcc.python import stringutils
+from dcc.json import jsonutils
 from dcc.ui import quicwindow
 from dcc.ui.dialogs import qlistdialog
-from ..libs import poseutils
+from ..libs import rigconfiguration, poseutils
 
 import logging
 logging.basicConfig()
@@ -44,9 +46,17 @@ class QEzPoser(quicwindow.QUicWindow):
         self._scene = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
         self._cwd = kwargs.get('cwd', self.scene.projectPath)
         self._customNamespace = ''
-        self._controllerPatterns = kwargs.get('controllerPatterns', [])
-        self._controllerPriorities = kwargs.get('controllerPriorities', [])
+        self._configurations = self.loadConfigurations()
+        self._currentConfiguration = None
         self._callbackId = None
+
+        # Check if any configurations were loaded
+        #
+        numConfigurations = len(self.configurations)
+
+        if numConfigurations > 0:
+
+            self._currentConfiguration = self.configurations[-1]
     # endregion
 
     # region Properties
@@ -59,6 +69,16 @@ class QEzPoser(quicwindow.QUicWindow):
         """
 
         return self._scene()
+
+    @property
+    def configurations(self):
+        """
+        Returns a list of active rig configurations.
+
+        :rtype: List[rigconfiguration.RigConfiguration]
+        """
+
+        return self._configurations
     # endregion
 
     # region Callbacks
@@ -127,16 +147,7 @@ class QEzPoser(quicwindow.QUicWindow):
         self.setCwd(self.settings.value('editor/cwd', defaultValue=self.scene.projectPath))
         self.setNamespaceOption(self.settings.value('editor/namespaceOption', defaultValue=0))
         self.setCustomNamespace(self.settings.value('editor/customNamespace', defaultValue=''))
-
-        # Check if controller patterns/priorities exist
-        #
-        controllerPatterns = self.settings.value('editor/controllerPatterns', defaultValue='')
-        controllerPriorities = self.settings.value('editor/controllerPriorities', defaultValue='')
-
-        if not stringutils.isNullOrEmpty(controllerPatterns) and not stringutils.isNullOrEmpty(controllerPriorities):
-
-            self.setControllerPatterns(json.loads(controllerPatterns))
-            self.setControllerPriorities(json.loads(controllerPriorities))
+        self.setCurrentConfiguration(self.settings.value('editor/currentConfiguration', defaultValue=-1))
 
         # Load tab settings
         #
@@ -161,8 +172,7 @@ class QEzPoser(quicwindow.QUicWindow):
         self.settings.setValue('editor/cwd', self.cwd())
         self.settings.setValue('editor/namespaceOption', self.namespaceOption())
         self.settings.setValue('editor/customNamespace', self.customNamespace())
-        self.settings.setValue('editor/controllerPatterns', json.dumps(self.controllerPatterns()))
-        self.settings.setValue('editor/controllerPriorities', json.dumps(self.controllerPriorities()))
+        self.settings.setValue('editor/currentConfiguration', self.configurations.index(self.currentConfiguration()))
 
         # Save tab settings
         #
@@ -271,18 +281,81 @@ class QEzPoser(quicwindow.QUicWindow):
         """
         Returns the current namespace based on the user specified namespace option.
 
-        :rtype: Union[str, None]
+        :rtype: str
         """
 
         namespaceOption = self.namespaceOption()
 
         if namespaceOption == 0:  # Use pose namespace
 
-            return None
+            return ''
 
         else:  # Use current namespace
 
             return self._customNamespace
+
+    def loadConfigurations(self):
+        """
+        Loads all the available rig configurations.
+
+        :rtype: None
+        """
+
+        # Get configuration directory
+        #
+        baseDirectory = os.path.dirname(os.path.abspath(__file__))
+        directory = os.path.join(baseDirectory, '..', 'configs')
+
+        # Iterate through configuration files
+        #
+        filePaths = [os.path.join(directory, filename) for filename in os.listdir(directory) if filename.endswith('.config')]
+        numFilePaths = len(filePaths)
+
+        configs = [None] * numFilePaths
+
+        for (i, filePath) in enumerate(filePaths):
+
+            configs[i] = jsonutils.load(filePath)
+
+        return configs
+
+    def currentConfiguration(self):
+        """
+        Returns the current rig configuration.
+
+        :rtype: rigconfiguration.RigConfiguration
+        """
+
+        return self._currentConfiguration
+
+    def setCurrentConfiguration(self, configuration):
+        """
+        Updates the current rig configuration.
+
+        :type configuration: Union[int, str, rigconfiguration.RigConfiguration]
+        :rtype: None
+        """
+
+        # Evaluate configuration type
+        #
+        if isinstance(configuration, integer_types):
+
+            self._currentConfiguration = self.configurations[configuration]
+
+        elif isinstance(configuration, string_types):
+
+            configurations = [config.name for config in self.configurations]
+            index = configurations.index(configuration)
+
+            self._currentConfiguration = self.configurations[index]
+
+        elif isinstance(configuration, rigconfiguration.RigConfiguration):
+
+            self._currentConfiguration = configuration
+
+        else:
+
+            raise TypeError(f'setCurrentConfiguration() expects a valid configuration ({type(configuration).__name__} given)!')
 
     def controllerPatterns(self):
         """
@@ -291,17 +364,7 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: List[str]
         """
 
-        return self._controllerPatterns
-
-    def setControllerPatterns(self, patterns):
-        """
-        Updates the controller patterns used for saving poses.
-
-        :type patterns: List[str]
-        :rtype: None
-        """
-
-        self._controllerPatterns = patterns
+        return self.currentConfiguration().controllerPatterns
 
     def controllerPriorities(self):
         """
@@ -310,20 +373,39 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: List[str]
         """
 
-        return self._controllerPriorities
-
-    def setControllerPriorities(self, priorities):
-        """
-        Updates the controller priorities for setting poses.
-
-        :type priorities: List[str]
-        :rtype: None
-        """
-
-        self._controllerPriorities = priorities
+        return self.currentConfiguration().controllerPriorities
     # endregion
 
     # region Slots
+    @QtCore.Slot(bool)
+    def on_setProjectFolderAction_triggered(self, checked=False):
+        """
+        Slot method for the setProjectFolderAction's `triggered` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        # Prompt user for save path
+        #
+        directory = QtWidgets.QFileDialog.getExistingDirectory(
+            parent=self,
+            caption='Select Project Folder',
+            dir=self.cwd(),
+            options=QtWidgets.QFileDialog.ShowDirsOnly
+        )
+
+        # Check if path is valid
+        # A null value will be returned if the user exited
+        #
+        if os.path.isdir(directory) and os.path.exists(directory):
+
+            self.setCwd(directory)
+
+        else:
+
+            log.info('Operation aborted.')
+
     @QtCore.Slot(bool)
     def on_changeNamespaceAction_triggered(self, checked=False):
         """
@@ -335,12 +417,17 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Prompt user for namespace
         #
+        namespaces = om.MNamespace.getNamespaces(recurse=True)
+        customNamespace = self.customNamespace()
+        currentIndex = namespaces.index(customNamespace) if customNamespace in namespaces else 0
+
         namespace, response = QtWidgets.QInputDialog.getItem(
             self,
             'Select Namespace',
             'Namespaces:',
-            om.MNamespace.getNamespaces(),
-            editable=False
+            namespaces,
+            editable=False,
+            current=currentIndex
         )
 
         if response:
@@ -352,9 +439,9 @@ class QEzPoser(quicwindow.QUicWindow):
             log.warning('Operation aborted...')
 
     @QtCore.Slot(bool)
-    def on_editControllerPatternsAction_triggered(self, checked=False):
+    def on_changeRigConfigurationAction_triggered(self, checked=False):
         """
-        Slot method for the editControllerPatternsAction's `triggered` signal.
+        Slot method for the changeRigConfigurationAction's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -362,38 +449,22 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Prompt user for patterns
         #
-        dialog = qlistdialog.QListDialog('Edit Controller Patterns', parent=self)
-        dialog.setItems(self.controllerPatterns())
+        configurations = [config.name for config in self.configurations]
+        currentConfiguration = self.currentConfiguration()
+        current = configurations.index(currentConfiguration.name)
 
-        response = dialog.exec_()
-
-        if response:
-
-            self.setControllerPatterns(dialog.items())
-
-        else:
-
-            log.info('Operation aborted...')
-
-    @QtCore.Slot(bool)
-    def on_editControllerPriorityAction_triggered(self, checked=False):
-        """
-        Slot method for the editControllerPriorityAction's `triggered` signal.
-
-        :type checked: bool
-        :rtype: None
-        """
-
-        # Prompt user for patterns
-        #
-        dialog = qlistdialog.QListDialog('Edit Controller Priority', parent=self)
-        dialog.setItems(self.controllerPriorities())
-
-        response = dialog.exec_()
+        configuration, response = QtWidgets.QInputDialog.getItem(
+            self,
+            'Select Rig Configuration',
+            'Configurations:',
+            configurations,
+            editable=False,
+            current=current
+        )
 
         if response:
 
-            self.setControllerPriorities(dialog.items())
+            self.setCurrentConfiguration(configuration)
 
         else:
 

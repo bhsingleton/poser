@@ -98,8 +98,7 @@
     <addaction name="useCustomNamespaceAction"/>
     <addaction name="changeNamespaceAction"/>
     <addaction name="separator"/>
-    <addaction name="editControllerPatternsAction"/>
-    <addaction name="editControllerPriorityAction"/>
+    <addaction name="changeRigConfigurationAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="settingsMenu"/>
@@ -120,9 +119,9 @@
     <string>Edit Controller Priority</string>
    </property>
   </action>
-  <action name="editControllerPatternsAction">
+  <action name="changeRigConfigurationAction">
    <property name="text">
-    <string>Edit Controller Patterns</string>
+    <string>Change Rig Configuration</string>
    </property>
   </action>
   <action name="changeNamespaceAction">
