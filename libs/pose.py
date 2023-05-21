@@ -1,6 +1,7 @@
 from maya.api import OpenMaya as om
 from mpy import mpynode, mpyfactory
 from copy import copy, deepcopy
+from operator import neg
 from dcc.json import psonobject
 from dcc.python import stringutils
 from dcc.dataclasses import keyframe
@@ -8,7 +9,6 @@ from dcc.collections import notifylist
 from dcc.generators.inclusiverange import inclusiveRange
 from dcc.maya.libs import plugutils, plugmutators, transformutils
 from dcc.maya.decorators.animate import animate
-from dcc.maya.decorators.undo import undo
 
 import logging
 logging.basicConfig()
@@ -318,12 +318,14 @@ class Pose(psonobject.PSONObject):
 
         # Iterate through nodes
         #
+        namespace = kwargs.get('namespace', '')
+
         for node in nodes:
 
             # Check if pose exists
             #
             name = node.name()
-            pose = self.getPoseByName(name)
+            pose = self.getPoseByName(name, namespace=namespace)
 
             if pose is not None:
 
@@ -390,7 +392,6 @@ class Pose(psonobject.PSONObject):
 
         return blendPose
 
-    @undo(name='Apply Pose')
     def applyTo(self, *nodes, **kwargs):
         """
         Applies this pose to the supplied nodes.
@@ -405,7 +406,20 @@ class Pose(psonobject.PSONObject):
 
             pose.applyValues(node, **kwargs)
 
-    @undo(name='Apply Relative Pose')
+    def applyOppositeTo(self, *nodes, **kwargs):
+        """
+        Applies this pose to the opposite nodes.
+
+        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
+        :rtype: None
+        """
+
+        # Iterate through nodes
+        #
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+
+            pose.mirrorValues(node, **kwargs)
+
     def applyRelativeTo(self, nodes, relativeTo, **kwargs):
         """
         Applies this pose relative to the specified node.
@@ -444,10 +458,9 @@ class Pose(psonobject.PSONObject):
             relativeMatrix = offsetMatrix * worldMatrix
             matrix = relativeMatrix * node.parentInverseMatrix()
 
-            node.setMatrix(matrix, **kwargs)
+            node.setMatrix(matrix, skipScale=True, **kwargs)
 
-    @undo(name='Apply Transform')
-    def applyMatricesTo(self, *nodes, **kwargs):
+    def applyTransformsTo(self, *nodes, **kwargs):
         """
         Applies the matrix values to the supplied nodes.
 
@@ -479,8 +492,7 @@ class Pose(psonobject.PSONObject):
         TODO: Implement support for decimal frames when preserving keys!
 
         :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
-        :key startTime: int
-        :key endTime: int
+        :key animationRange: Union[Tuple[int, int], None]
         :key step: int
         :key snapKeys: bool
         :key preserveKeys: bool
@@ -489,23 +501,23 @@ class Pose(psonobject.PSONObject):
 
         # Check if keys should be preserved
         #
+        animationRange = kwargs.get('animationRange', self.animationRange)
+        startTime, endTime = animationRange
         preserveKeys = kwargs.get('preserveKeys', False)
+
         times = None
 
         if preserveKeys:
 
             # Get keyframe inputs
             #
-            times = [time for time in self.getKeyframeInputs()]
+            times = [time for time in self.getKeyframeInputs() if startTime <= time <= endTime]
 
         else:
 
             # Get animation range
             #
-            startTime = kwargs.get('startTime', self.animationRange[0])
-            endTime = kwargs.get('endTime', self.animationRange[1])
             step = kwargs.get('step', 1)
-
             times = list(inclusiveRange(startTime, endTime, step))
 
         # Iterate through time inputs
@@ -522,9 +534,9 @@ class Pose(psonobject.PSONObject):
 
                 # Check if keys should be cleared
                 #
-                if i == 0:
+                if i == 0 and not preserveKeys:
 
-                    node.clearKeys(animationRange=self.animationRange, skipUserAttributes=True)
+                    node.clearKeys(animationRange=animationRange, skipUserAttributes=True)
 
                 # Apply transform at time
                 #
@@ -542,11 +554,12 @@ class Pose(psonobject.PSONObject):
 
         self.scene.animationRange = self.animationRange
 
-    def applyAnimationTo(self, *nodes, insertAt=None, **kwargs):
+    def applyAnimationTo(self, *nodes, insertAt=None, animationRange=None, **kwargs):
         """
         Updates the animation keys to the supplied nodes.
 
         :type insertAt: Union[int, None]
+        :type animationRange: Union[Tuple[int, int], None]
         :rtype: None
         """
 
@@ -554,7 +567,22 @@ class Pose(psonobject.PSONObject):
         #
         for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
 
-            pose.applyKeyframes(node, insertAt=insertAt)
+            pose.applyKeyframes(node, insertAt=insertAt, animationRange=animationRange)
+
+    def applyAnimationOppositeTo(self, *nodes, insertAt=None, animationRange=None, **kwargs):
+        """
+        Updates the animation keys to the supplied nodes.
+
+        :type insertAt: Union[int, None]
+        :type animationRange: Union[Tuple[int, int], None]
+        :rtype: None
+        """
+
+        # Iterate through nodes
+        #
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+
+            pose.mirrorKeyframes(node, insertAt=insertAt, animationRange=animationRange)
 
     @classmethod
     def create(cls, *nodes, **kwargs):
@@ -562,6 +590,10 @@ class Pose(psonobject.PSONObject):
         Returns a new pose using the supplied nodes.
 
         :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
+        :key animationRange: Tuple[int, int]
+        :key step: int
+        :key skipKeys: bool
+        :key skipTransformation: bool
         :rtype: Pose
         """
 
@@ -911,7 +943,6 @@ class PoseNode(psonobject.PSONObject):
         Applies the attribute values to the supplied node.
 
         :type node: mpynode.MPyNode
-        :key modifier: Union[om.MDGModifier, None]
         :rtype: None
         """
 
@@ -943,6 +974,7 @@ class PoseNode(psonobject.PSONObject):
         # Iterate through attributes
         #
         insertAt = kwargs.get('insertAt', None)
+        animationRange = kwargs.get('animationRange', self.pose.animationRange)
         skipUserAttributes = kwargs.get('skipUserAttributes', False)
 
         for attribute in self.attributes:
@@ -971,18 +1003,18 @@ class PoseNode(psonobject.PSONObject):
 
             # Apply keyframes to animation curve
             #
-            animCurve = node.findAnimCurve(plug, ensure=True)
+            animCurve = node.findAnimCurve(plug, create=True)
 
             if insertAt is not None:
 
                 difference = insertAt - self.pose.animationRange[0]
                 keyframes = [key.copy(time=(key.time + difference)) for key in attribute.keyframes]
                 
-                animCurve.replaceKeys(keyframes, clear=True)
+                animCurve.replaceKeys(keyframes, animationRange=animationRange)
 
             else:
 
-                animCurve.replaceKeys(attribute.keyframes, clear=True)
+                animCurve.replaceKeys(attribute.keyframes, animationRange=animationRange)
 
     def applyMatrix(self, node, **kwargs):
         """
@@ -1005,12 +1037,104 @@ class PoseNode(psonobject.PSONObject):
         matrix = self.worldMatrix * node.parentInverseMatrix()
         node.setMatrix(matrix, **kwargs)
 
+    def mirrorValues(self, node, **kwargs):
+        """
+        Applies the mirrored attribute values to the opposite node.
+
+        :type node: mpynode.MPyNode
+        :rtype: None
+        """
+
+        # Iterate through attributes
+        #
+        otherNode = node.getOppositeNode()
+
+        for attribute in self.attributes:
+
+            # Check if attribute exists
+            #
+            if not otherNode.hasAttr(attribute.name):
+
+                log.warning(f'Cannot locate "{attribute.name}" attribute on "{node.name()}" node!')
+                continue
+
+            # Mirror attribute to other node
+            #
+            mirrorFlag = 'mirror{name}'.format(name=stringutils.titleize(attribute.name))
+            mirrorEnabled = node.userProperties.get(mirrorFlag, False)
+
+            if mirrorEnabled:
+
+                otherNode.setAttr(attribute.name, -attribute.value)
+
+            else:
+
+                otherNode.setAttr(attribute.name, attribute.value)
+
+    def mirrorKeyframes(self, node, **kwargs):
+        """
+        Applies the attribute keyframes to the supplied node.
+
+        :type node: mpynode.MPyNode
+        :key insertAt: Union[int, None]
+        :key skipUserAttributes: bool
+        :rtype: None
+        """
+
+        # Iterate through attributes
+        #
+        otherNode = node.getOppositeNode()
+
+        insertAt = kwargs.get('insertAt', None)
+        animationRange = kwargs.get('animationRange', self.pose.animationRange)
+        skipUserAttributes = kwargs.get('skipUserAttributes', False)
+
+        for attribute in self.attributes:
+
+            # Check if attribute has animation
+            #
+            if len(attribute.keyframes) == 0:
+
+                continue
+
+            # Check if attribute exists
+            #
+            if not otherNode.hasAttr(attribute.name):
+
+                log.warning(f'Cannot locate "{attribute.name}" attribute from "{node.name()}" node!')
+                continue
+
+            # Check if user attributes should be skipped
+            #
+            plug = otherNode.findPlug(attribute.name)
+
+            if skipUserAttributes and plug.isDynamic:
+
+                log.debug(f'Skipping "{attribute.name}" user attribute on "{node.name()}" node!')
+                continue
+
+            # Check if keyframes need to be inversed
+            #
+            mirrorFlag = 'mirror{name}'.format(name=stringutils.titleize(attribute.name))
+            mirrorEnabled = node.userProperties.get(mirrorFlag, False)
+
+            keyframes = attribute.invertKeyframes() if mirrorEnabled else list(attribute.keyframes)
+
+            # Apply keyframes to animation curve
+            #
+            animCurve = otherNode.findAnimCurve(plug, create=True)
+            animCurve.replaceKeys(keyframes, insertAt=insertAt, animationRange=animationRange)
+
     @classmethod
     def create(cls, node, **kwargs):
         """
         Returns a new pose node using the supplied node.
 
         :type node: mpynode.MPyNode
+        :key animationRange: Tuple[int, int]
+        :key step: int
+        :key skipKeys: bool
+        :key skipTransformation: bool
         :rtype: PoseNode
         """
 
@@ -1187,6 +1311,15 @@ class PoseAttribute(psonobject.PSONObject):
     # endregion
 
     # region Methods
+    def invertKeyframes(self):
+        """
+        Inverts the keyframes from this attribute.
+
+        :rtype: List[keyframe.Keyframe]
+        """
+
+        return list(map(neg, self.keyframes))
+
     @classmethod
     def create(cls, plug, **kwargs):
         """
