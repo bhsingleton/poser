@@ -1,14 +1,16 @@
 import os
-import re
 import json
 import subprocess
 
 from maya.api import OpenMaya as om
 from Qt import QtCore, QtWidgets, QtGui
+from fnmatch import fnmatchcase
 from dcc.python import stringutils
 from dcc.ui import qrollout, qtimespinbox
 from dcc.ui.models import qfileitemmodel, qfileitemfiltermodel
+from dcc.maya.decorators.undo import undo
 from . import qabstracttab
+from ..dialogs import qaniminputdialog
 from ...libs import poseutils
 
 import logging
@@ -56,6 +58,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self.createPoseMenu = None
         self.selectControlsAction = None
+        self.selectVisibleControlsAction = None
         self.addFolderAction = None
         self.addPoseAction = None
         self.addAnimationAction = None
@@ -67,7 +70,12 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.deleteFileAction = None
         self.openInExplorerAction = None
 
-        self.applyRelativeMenu = None
+        self.applyPoseMenu = None
+        self.insertAnimAction = None
+        self.replaceAnimAction = None
+        self.insertTimeSpinBox = None
+        self.insertTimeAction = None
+        self.applyRelativePoseMenu = None
         self.relativeTargetAction = None
         self.pickRelativeTargetAction = None
 
@@ -78,21 +86,21 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.matchScaleAction = None
 
         self.mirrorMenu = None
-        self.startTimeWidget = None
-        self.startTimeLayout = None
-        self.startTimeCheckBox = None
-        self.startTimeSpinBox = None
-        self.startTimeAction = None
-        self.endTimeWidget = None
-        self.endTimeLayout = None
-        self.endTimeCheckBox = None
-        self.endTimeSpinBox = None
-        self.endTimeAction = None
-        self.insertTimeWidget = None
-        self.insertTimeLayout = None
-        self.insertTimeCheckBox = None
-        self.insertTimeSpinBox = None
-        self.insertTimeAction = None
+        self.mirrorStartTimeWidget = None
+        self.mirrorStartTimeLayout = None
+        self.mirrorStartTimeCheckBox = None
+        self.mirrorStartTimeSpinBox = None
+        self.mirrorStartTimeAction = None
+        self.mirrorEndTimeWidget = None
+        self.mirrorEndTimeLayout = None
+        self.mirrorEndTimeCheckBox = None
+        self.mirrorEndTimeSpinBox = None
+        self.mirrorEndTimeAction = None
+        self.mirrorTimeWidget = None
+        self.mirrorTimeLayout = None
+        self.mirrorTimeCheckBox = None
+        self.mirrorTimeSpinBox = None
+        self.mirrorTimeAction = None
     # endregion
 
     # region Methods
@@ -144,6 +152,10 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.selectControlsAction.setObjectName('selectControlsAction')
         self.selectControlsAction.triggered.connect(self.on_selectControlsAction_triggered)
 
+        self.selectVisibleControlsAction = QtWidgets.QAction('Select Visible Controls')
+        self.selectVisibleControlsAction.setObjectName('selectVisibleControlsAction')
+        self.selectVisibleControlsAction.triggered.connect(self.on_selectVisibleControlsAction_triggered)
+
         self.addFolderAction = QtWidgets.QAction('Add Folder')
         self.addFolderAction.setObjectName('addFolderAction')
         self.addFolderAction.triggered.connect(self.on_addFolderAction_triggered)
@@ -158,7 +170,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self.createPoseMenu = QtWidgets.QMenu(parent=self.fileListView)
         self.createPoseMenu.setObjectName('createPoseMenu')
-        self.createPoseMenu.addAction(self.selectControlsAction)
+        self.createPoseMenu.addActions([self.selectControlsAction, self.selectVisibleControlsAction])
         self.createPoseMenu.addSeparator()
         self.createPoseMenu.addActions([self.addFolderAction, self.addPoseAction, self.addAnimationAction])
 
@@ -192,21 +204,58 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.editPoseMenu.addSeparator()
         self.editPoseMenu.addAction(self.openInExplorerAction)
 
-        # Initialize apply menu
+        # Initialize apply pose menu
         #
-        self.relativeTargetAction = QtWidgets.QAction('Target: None')
+        self.applyPoseMenu = QtWidgets.QMenu(parent=self.applyPosePushButton)
+        self.applyPoseMenu.setObjectName('applyPoseMenu')
+
+        self.insertTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.applyPoseMenu)
+        self.insertTimeSpinBox.setObjectName('insertTimeSpinBox')
+        self.insertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.insertTimeSpinBox.setDefaultType(self.insertTimeSpinBox.DefaultType.CurrentTime)
+        self.insertTimeSpinBox.setRange(-9999, 9999)
+        self.insertTimeSpinBox.setValue(self.scene.startTime)
+        self.insertTimeSpinBox.setPrefix('Insert At: ')
+        self.insertTimeSpinBox.setEnabled(False)
+
+        self.insertTimeAction = QtWidgets.QWidgetAction(self.applyPoseMenu)
+        self.insertTimeAction.setDefaultWidget(self.insertTimeSpinBox)
+
+        self.replaceAnimAction = QtWidgets.QAction('Replace')
+        self.replaceAnimAction.setObjectName('replaceAnimAction')
+        self.replaceAnimAction.setCheckable(True)
+        self.replaceAnimAction.setChecked(True)
+
+        self.insertAnimAction = QtWidgets.QAction('Insert')
+        self.insertAnimAction.setObjectName('insertAnimAction')
+        self.insertAnimAction.setCheckable(True)
+        self.insertAnimAction.setChecked(False)
+        self.insertAnimAction.toggled.connect(self.insertTimeSpinBox.setEnabled)
+
+        self.applyAnimActionGroup = QtWidgets.QActionGroup(self.applyPoseMenu)
+        self.applyAnimActionGroup.setObjectName('applyAnimActionGroup')
+        self.applyAnimActionGroup.setExclusive(True)
+        self.applyAnimActionGroup.addAction(self.replaceAnimAction)
+        self.applyAnimActionGroup.addAction(self.insertAnimAction)
+
+        self.applyPoseMenu.addActions([self.replaceAnimAction, self.insertAnimAction, self.insertTimeAction])
+        self.applyPosePushButton.setMenu(self.applyPoseMenu)
+
+        # Initialize apply relative pose menu
+        #
+        self.applyRelativePoseMenu = QtWidgets.QMenu(parent=self.applyRelativePosePushButton)
+        self.applyRelativePoseMenu.setObjectName('applyRelativePoseMenu')
+
+        self.relativeTargetAction = QtWidgets.QAction('Target: None', parent=self.applyRelativePoseMenu)
         self.relativeTargetAction.setObjectName('relativeTargetAction')
         self.relativeTargetAction.setDisabled(True)
 
-        self.pickRelativeTargetAction = QtWidgets.QAction('Pick Relative Target')
+        self.pickRelativeTargetAction = QtWidgets.QAction('Pick Relative Target', parent=self.applyRelativePoseMenu)
         self.pickRelativeTargetAction.setObjectName('pickRelativeTargetAction')
         self.pickRelativeTargetAction.triggered.connect(self.on_pickRelativeTargetAction_triggered)
 
-        self.applyRelativeMenu = QtWidgets.QMenu(parent=self.applyRelativePushButton)
-        self.applyRelativeMenu.setObjectName('applyRelativeMenu')
-        self.applyRelativeMenu.addActions([self.relativeTargetAction, self.pickRelativeTargetAction])
-
-        self.applyRelativePushButton.setMenu(self.applyRelativeMenu)
+        self.applyRelativePoseMenu.addActions([self.relativeTargetAction, self.pickRelativeTargetAction])
+        self.applyRelativePosePushButton.setMenu(self.applyRelativePoseMenu)
 
         # Initialize fetch menu
         #
@@ -238,108 +287,108 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self.fetchTransformPushButton.setMenu(self.fetchMenu)
 
-        # Initialize start time widget
+        # Initialize mirror start time widget
         #
         self.mirrorMenu = QtWidgets.QMenu(parent=self)
         self.mirrorMenu.setObjectName('mirrorMenu')
 
-        self.startTimeLayout = QtWidgets.QHBoxLayout()
-        self.startTimeLayout.setContentsMargins(4, 0, 0, 0)
-        self.startTimeLayout.setSpacing(4)
+        self.mirrorStartTimeLayout = QtWidgets.QHBoxLayout()
+        self.mirrorStartTimeLayout.setContentsMargins(4, 0, 0, 0)
+        self.mirrorStartTimeLayout.setSpacing(4)
 
-        self.startTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
-        self.startTimeWidget.setObjectName('startTimeWidget')
-        self.startTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.startTimeWidget.setFixedHeight(20)
-        self.startTimeWidget.setLayout(self.startTimeLayout)
+        self.mirrorStartTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
+        self.mirrorStartTimeWidget.setObjectName('mirrorStartTimeWidget')
+        self.mirrorStartTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.mirrorStartTimeWidget.setFixedHeight(20)
+        self.mirrorStartTimeWidget.setLayout(self.mirrorStartTimeLayout)
 
-        self.startTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.startTimeWidget)
-        self.startTimeSpinBox.setObjectName('startTimeSpinBox')
-        self.startTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.startTimeSpinBox.setDefaultType(self.startTimeSpinBox.DefaultType.StartTime)
-        self.startTimeSpinBox.setRange(-9999, 9999)
-        self.startTimeSpinBox.setValue(self.scene.startTime)
-        self.startTimeSpinBox.setPrefix('Start: ')
-        self.startTimeSpinBox.setEnabled(False)
+        self.mirrorStartTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.mirrorStartTimeWidget)
+        self.mirrorStartTimeSpinBox.setObjectName('mirrorStartTimeSpinBox')
+        self.mirrorStartTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.mirrorStartTimeSpinBox.setDefaultType(self.mirrorStartTimeSpinBox.DefaultType.StartTime)
+        self.mirrorStartTimeSpinBox.setRange(-9999, 9999)
+        self.mirrorStartTimeSpinBox.setValue(self.scene.startTime)
+        self.mirrorStartTimeSpinBox.setPrefix('Start: ')
+        self.mirrorStartTimeSpinBox.setEnabled(False)
 
-        self.startTimeCheckBox = QtWidgets.QCheckBox('', parent=self.startTimeWidget)
-        self.startTimeCheckBox.setObjectName('startTimeCheckBox')
-        self.startTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.startTimeCheckBox.toggled.connect(self.startTimeSpinBox.setEnabled)
+        self.mirrorStartTimeCheckBox = QtWidgets.QCheckBox('', parent=self.mirrorStartTimeWidget)
+        self.mirrorStartTimeCheckBox.setObjectName('startTimeCheckBox')
+        self.mirrorStartTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.mirrorStartTimeCheckBox.toggled.connect(self.mirrorStartTimeSpinBox.setEnabled)
 
-        self.startTimeLayout.addWidget(self.startTimeCheckBox)
-        self.startTimeLayout.addWidget(self.startTimeSpinBox)
+        self.mirrorStartTimeLayout.addWidget(self.mirrorStartTimeCheckBox)
+        self.mirrorStartTimeLayout.addWidget(self.mirrorStartTimeSpinBox)
 
-        self.startTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
-        self.startTimeAction.setDefaultWidget(self.startTimeWidget)
+        self.mirrorStartTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
+        self.mirrorStartTimeAction.setDefaultWidget(self.mirrorStartTimeWidget)
 
-        # Initialize end time widget
+        # Initialize mirror end time widget
         #
-        self.endTimeLayout = QtWidgets.QHBoxLayout()
-        self.endTimeLayout.setContentsMargins(4, 0, 0, 0)
-        self.endTimeLayout.setSpacing(4)
+        self.mirrorEndTimeLayout = QtWidgets.QHBoxLayout()
+        self.mirrorEndTimeLayout.setContentsMargins(4, 0, 0, 0)
+        self.mirrorEndTimeLayout.setSpacing(4)
 
-        self.endTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
-        self.endTimeWidget.setObjectName('endTimeWidget')
-        self.endTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.endTimeWidget.setFixedHeight(20)
-        self.endTimeWidget.setLayout(self.endTimeLayout)
+        self.mirrorEndTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
+        self.mirrorEndTimeWidget.setObjectName('mirrorEndTimeWidget')
+        self.mirrorEndTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.mirrorEndTimeWidget.setFixedHeight(20)
+        self.mirrorEndTimeWidget.setLayout(self.mirrorEndTimeLayout)
 
-        self.endTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.endTimeWidget)
-        self.endTimeSpinBox.setObjectName('endTimeSpinBox')
-        self.endTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.endTimeSpinBox.setDefaultType(self.endTimeSpinBox.DefaultType.EndTime)
-        self.endTimeSpinBox.setRange(-9999, 9999)
-        self.endTimeSpinBox.setValue(self.scene.endTime)
-        self.endTimeSpinBox.setPrefix('End: ')
-        self.endTimeSpinBox.setEnabled(False)
+        self.mirrorEndTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.mirrorEndTimeWidget)
+        self.mirrorEndTimeSpinBox.setObjectName('mirrorEndTimeSpinBox')
+        self.mirrorEndTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.mirrorEndTimeSpinBox.setDefaultType(self.mirrorEndTimeSpinBox.DefaultType.EndTime)
+        self.mirrorEndTimeSpinBox.setRange(-9999, 9999)
+        self.mirrorEndTimeSpinBox.setValue(self.scene.endTime)
+        self.mirrorEndTimeSpinBox.setPrefix('End: ')
+        self.mirrorEndTimeSpinBox.setEnabled(False)
 
-        self.endTimeCheckBox = QtWidgets.QCheckBox('', parent=self.endTimeWidget)
-        self.endTimeCheckBox.setObjectName('endTimeCheckBox')
-        self.endTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.endTimeCheckBox.toggled.connect(self.endTimeSpinBox.setEnabled)
+        self.mirrorEndTimeCheckBox = QtWidgets.QCheckBox('', parent=self.mirrorEndTimeWidget)
+        self.mirrorEndTimeCheckBox.setObjectName('mirrorEndTimeCheckBox')
+        self.mirrorEndTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.mirrorEndTimeCheckBox.toggled.connect(self.mirrorEndTimeSpinBox.setEnabled)
 
-        self.endTimeLayout.addWidget(self.endTimeCheckBox)
-        self.endTimeLayout.addWidget(self.endTimeSpinBox)
+        self.mirrorEndTimeLayout.addWidget(self.mirrorEndTimeCheckBox)
+        self.mirrorEndTimeLayout.addWidget(self.mirrorEndTimeSpinBox)
 
-        self.endTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
-        self.endTimeAction.setDefaultWidget(self.endTimeWidget)
+        self.mirrorEndTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
+        self.mirrorEndTimeAction.setDefaultWidget(self.mirrorEndTimeWidget)
 
-        # Initialize insert time widget
+        # Initialize mirror time widget
         #
-        self.insertTimeLayout = QtWidgets.QHBoxLayout()
-        self.insertTimeLayout.setContentsMargins(4, 0, 0, 0)
-        self.insertTimeLayout.setSpacing(4)
+        self.mirrorTimeLayout = QtWidgets.QHBoxLayout()
+        self.mirrorTimeLayout.setContentsMargins(4, 0, 0, 0)
+        self.mirrorTimeLayout.setSpacing(4)
 
-        self.insertTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
-        self.insertTimeWidget.setObjectName('insertTimeWidget')
-        self.insertTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.insertTimeWidget.setFixedHeight(20)
-        self.insertTimeWidget.setLayout(self.insertTimeLayout)
+        self.mirrorTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
+        self.mirrorTimeWidget.setObjectName('mirrorTimeWidget')
+        self.mirrorTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        self.mirrorTimeWidget.setFixedHeight(20)
+        self.mirrorTimeWidget.setLayout(self.mirrorTimeLayout)
 
-        self.insertTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.insertTimeWidget)
-        self.insertTimeSpinBox.setObjectName('insertTimeSpinBox')
-        self.insertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.insertTimeSpinBox.setDefaultType(self.insertTimeSpinBox.DefaultType.CurrentTime)
-        self.insertTimeSpinBox.setRange(-9999, 9999)
-        self.insertTimeSpinBox.setValue(self.scene.startTime)
-        self.insertTimeSpinBox.setPrefix('Insert At: ')
-        self.insertTimeSpinBox.setEnabled(False)
+        self.mirrorTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.mirrorTimeWidget)
+        self.mirrorTimeSpinBox.setObjectName('mirrorTimeSpinBox')
+        self.mirrorTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.mirrorTimeSpinBox.setDefaultType(self.mirrorTimeSpinBox.DefaultType.CurrentTime)
+        self.mirrorTimeSpinBox.setRange(-9999, 9999)
+        self.mirrorTimeSpinBox.setValue(self.scene.startTime)
+        self.mirrorTimeSpinBox.setPrefix('Insert At: ')
+        self.mirrorTimeSpinBox.setEnabled(False)
 
-        self.insertTimeCheckBox = QtWidgets.QCheckBox('', parent=self.insertTimeWidget)
-        self.insertTimeCheckBox.setObjectName('insertTimeCheckBox')
-        self.insertTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.insertTimeCheckBox.toggled.connect(self.insertTimeSpinBox.setEnabled)
+        self.mirrorTimeCheckBox = QtWidgets.QCheckBox('', parent=self.mirrorTimeWidget)
+        self.mirrorTimeCheckBox.setObjectName('mirrorTimeCheckBox')
+        self.mirrorTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
+        self.mirrorTimeCheckBox.toggled.connect(self.mirrorTimeSpinBox.setEnabled)
 
-        self.insertTimeLayout.addWidget(self.insertTimeCheckBox)
-        self.insertTimeLayout.addWidget(self.insertTimeSpinBox)
+        self.mirrorTimeLayout.addWidget(self.mirrorTimeCheckBox)
+        self.mirrorTimeLayout.addWidget(self.mirrorTimeSpinBox)
 
-        self.insertTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
-        self.insertTimeAction.setDefaultWidget(self.insertTimeWidget)
+        self.mirrorTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
+        self.mirrorTimeAction.setDefaultWidget(self.mirrorTimeWidget)
 
         # Initialize mirror menus
         #
-        self.mirrorMenu.addActions([self.startTimeAction, self.endTimeAction, self.insertTimeAction])
+        self.mirrorMenu.addActions([self.mirrorStartTimeAction, self.mirrorEndTimeAction, self.mirrorTimeAction])
 
         self.mirrorAnimationPushButton.setMenu(self.mirrorMenu)
         self.pullAnimationPushButton.setMenu(self.mirrorMenu)
@@ -472,26 +521,38 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             return path
 
-    def getTime(self):
+    def getAnimationMode(self):
         """
-        Returns the current time.
-
-        :rtype: int
-        """
-
-        return self.insertTimeSpinBox.value() if self.insertTimeCheckBox.isChecked() else self.scene.startTime
-
-    def getAnimationRange(self):
-        """
-        Returns the current animation range.
+        Returns the current animation mode.
+        If the `insert` mode is checked then the time is also returned.
 
         :rtype: Tuple[int, int]
         """
 
-        startTime = self.startTimeSpinBox.value() if self.startTimeCheckBox.isChecked() else self.scene.startTime
-        endTime = self.endTimeSpinBox.value() if self.endTimeCheckBox.isChecked() else self.scene.endTime
+        return self.applyAnimActionGroup.actions().index(self.applyAnimActionGroup.checkedAction())
 
-        return startTime, endTime
+    def getInsertTime(self):
+        """
+        Returns the current insert time.
+        If `insert` mode is not enabled then none is returned!
+
+        :rtype: Union[int, None]
+        """
+
+        return self.insertTimeSpinBox.value() if self.insertAnimAction.isChecked() else None
+
+    def getMirrorRange(self):
+        """
+        Returns the current mirror range.
+
+        :rtype: Tuple[int, int, int]
+        """
+
+        startTime = self.mirrorStartTimeSpinBox.value() if self.mirrorStartTimeCheckBox.isChecked() else self.scene.startTime
+        endTime = self.mirrorEndTimeSpinBox.value() if self.mirrorEndTimeCheckBox.isChecked() else self.scene.endTime
+        insertTime = self.mirrorTimeSpinBox.value() if self.mirrorTimeCheckBox.isChecked() else startTime
+
+        return startTime, endTime, insertTime
 
     def getSortPriority(self, node):
         """
@@ -504,16 +565,16 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         priorities = self.controllerPriorities()
         lastIndex = len(priorities)
 
-        matches = [i for (i, pattern) in enumerate(priorities) if re.match(pattern, node.name())]
+        matches = [i for (i, pattern) in enumerate(priorities) if fnmatchcase(node.name(), pattern)]
         numMatches = len(matches)
 
         if numMatches > 0:
 
-            return matches[0]
+            return matches[0]  # Use the first known match!
 
         else:
 
-            return lastIndex
+            return lastIndex  # Send to end of list...
 
     def getSelection(self, sort=False):
         """
@@ -531,7 +592,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         if selectionCount == 0:
 
-            selection = self.scene.getNodesByPattern(*self.controllerPatterns(), apiType=om.MFn.kTransform)
+            selection = self.getControls()
 
         # Check if selection requires sorting
         #
@@ -560,6 +621,556 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             return None
 
+    def iterControls(self, visible=False):
+        """
+        Returns a generator that yields controls from the scene.
+
+        :type visible: bool
+        :rtype: Iterator[mpynode.MPyNode]
+        """
+
+        # Iterate through nodes
+        #
+        currentNamespace = self.currentNamespace()
+        namespace = '*' if stringutils.isNullOrEmpty(currentNamespace) else currentNamespace
+
+        patterns = [f'{namespace}:{pattern}' for pattern in self.controllerPatterns()]
+
+        for node in self.scene.iterNodesByPattern(*patterns, apiType=om.MFn.kTransform):
+
+            # Check if this is a constraint
+            #
+            if any(map(node.hasFn, (om.MFn.kConstraint, om.MFn.kPluginConstraintNode))):
+
+                continue
+
+            # Check if invisible nodes should be skipped
+            #
+            if visible and not node.dagPath().isVisible():
+
+                continue
+
+            # Yield controller
+            #
+            yield node
+
+    def getControls(self, visible=False):
+        """
+        Returns a list of controls from the scene.
+
+        :type visible: bool
+        :rtype: Iterator[mpynode.MPyNode]
+        """
+
+        return list(self.iterControls(visible=visible))
+
+    @undo(state=False)
+    def selectControls(self, visible=False):
+        """
+        Selects any controls that match the active controller patterns.
+
+        :type visible: bool
+        :rtype: None
+        """
+
+        nodes = [node.object() for node in self.iterControls(visible=visible)]
+        self.scene.setSelection(nodes)
+
+    @undo(state=False)
+    def addFolder(self):
+        """
+        Prompts the user to create a new folder.
+
+        :rtype: None
+        """
+
+        # Prompt user for folder name
+        #
+        name, response = QtWidgets.QInputDialog.getText(
+            self,
+            'Create New Folder',
+            'Enter Name:',
+            QtWidgets.QLineEdit.Normal
+        )
+
+        if not response:
+
+            log.info('Operation aborted...')
+            return
+
+        # Check if name is unique
+        # Be sure to slugify the name before processing!
+        #
+        name = stringutils.slugify(name)
+        absolutePath = os.path.join(self.currentPath(absolute=True), name)
+
+        if os.path.exists(absolutePath) or stringutils.isNullOrEmpty(name):
+
+            # Notify user of invalid name
+            #
+            response = QtWidgets.QMessageBox.warning(
+                self,
+                'Create New Folder',
+                'The supplied name is not unique!',
+                QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel
+            )
+
+            if response == QtWidgets.QMessageBox.Ok:
+
+                self.addFolderAction.trigger()
+
+        else:
+
+            # Make new directory
+            #
+            os.mkdir(absolutePath)
+            self.refresh()
+
+    @undo(state=False)
+    def addPose(self):
+        """
+        Prompts the user to create a new pose file.
+
+        :rtype: None
+        """
+
+        # Prompt user for pose name
+        #
+        name, response = QtWidgets.QInputDialog.getText(
+            self,
+            'Create Pose',
+            'Enter Name:',
+            QtWidgets.QLineEdit.Normal
+        )
+
+        if not response:
+
+            log.info('Operation aborted...')
+            return
+
+        # Export pose
+        #
+        filename = '{name}.pose'.format(name=name)
+        absolutePath = os.path.join(self.currentPath(absolute=True), filename)
+
+        poseutils.exportPoseFromNodes(
+            absolutePath,
+            self.getSelection(),
+            name=name
+        )
+
+        # Refresh file view
+        #
+        self.refresh()
+
+    @undo(state=False)
+    def addAnimation(self):
+        """
+        Prompts the user to create a new animation file.
+
+        :rtype: None
+        """
+
+        # Prompt user for animation name
+        #
+        name, animationRange, response = qaniminputdialog.QAnimInputDialog.getText(
+            self,
+            'Create Animation',
+            'Enter Name:',
+            QtWidgets.QLineEdit.Normal
+        )
+
+        if not response:
+
+            log.info('Operation aborted...')
+            return
+
+        # Export animation
+        #
+        filename = '{name}.anim'.format(name=name)
+        absolutePath = os.path.join(self.currentPath(absolute=True), filename)
+
+        poseutils.exportPoseFromNodes(
+            absolutePath,
+            self.getSelection(),
+            name=name,
+            animationRange=animationRange,
+            skipKeys=False,
+            skipLayers=True
+        )
+
+        # Refresh file view
+        #
+        self.refresh()
+
+    @undo(state=False)
+    def openInExplorer(self):
+        """
+        Opens the selected file inside an explorer window.
+
+        :rtype: None
+        """
+
+        # Check if user path exists
+        #
+        path = self.currentPath(absolute=True)
+
+        if os.path.exists(path):
+
+            subprocess.Popen(r'explorer /select, "{path}"'.format(path=path))
+
+        else:
+
+            log.warning(f'Cannot find directory: {path}')
+
+    @undo(state=False)
+    def renameFile(self):
+        """
+        Renames the selected file or folder.
+
+        :rtype: None
+        """
+
+        # Get selected file
+        #
+        path = self.selectedPath()
+
+        if path is None:
+
+            log.warning('No file selected to rename!')
+            return
+
+        # Prompt user for new name
+        #
+        name, response = QtWidgets.QInputDialog.getText(
+            self,
+            'Rename File',
+            'Enter Name:',
+            echo=QtWidgets.QLineEdit.Normal,
+            text=path.name
+        )
+
+        if not response:
+
+            log.info('Operation aborted...')
+            return
+
+        # Check if name is unique
+        #
+        isUnique = all([sibling.basename.lower() != name.lower() for sibling in path.siblings])
+
+        if not isUnique:
+
+            QtWidgets.QMessageBox.warning(self, 'Rename File', 'File name already exists!')
+            return
+
+        # Rename file
+        #
+        source = str(path)
+
+        filename = '{name}.{extension}'.format(name=name, extension=path.extension) if path.isFile() else name
+        destination = os.path.join(str(path.parent), filename)
+
+        os.rename(source, destination)
+        self.refresh()
+
+    @undo(state=False)
+    def updateFile(self):
+        """
+        Updates the selected file.
+
+        :rtype: None
+        """
+
+        # Get selected file
+        #
+        path = self.selectedPath()
+
+        if path is None:
+
+            log.warning('No file selected to update!')
+            return
+
+        # Check which operation to perform
+        #
+        if path.extension == 'pose':
+
+            poseutils.exportPoseFromNodes(str(path), self.getSelection())
+
+        elif path.extension == 'anim':
+
+            poseutils.exportPoseFromNodes(str(path), self.getSelection(), skipKeys=False, skipLayers=False)
+
+        else:
+
+            log.warning(f'Cannot update file: {path}')
+
+    @undo(state=False)
+    def deleteFile(self):
+        """
+        Deletes the selected file or folder.
+
+        :rtype: None
+        """
+
+        # Get selected file
+        #
+        path = self.selectedPath()
+
+        if path is None:
+
+            log.warning('No file selected to delete!')
+            return
+
+        # Confirm user wants to delete file
+        #
+        response = QtWidgets.QMessageBox.warning(
+            self,
+            'Delete File',
+            'Are you sure you want to delete this file?',
+            QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel
+        )
+
+        if response != QtWidgets.QMessageBox.Ok:
+
+            log.info('Operation aborted...')
+            return
+
+        # Check if this is a directory
+        #
+        if path.isDir():
+
+            os.rmdir(str(path))
+            self.refresh()
+
+        else:
+
+            os.remove(str(path))
+            self.refresh()
+
+    @undo(name='Apply Pose')
+    def applyPose(self, pose):
+        """
+        Applies the supplied pose to the active selection.
+
+        :type pose: pose.Pose
+        :rtype: None
+        """
+
+        selection = self.getSelection()
+        namespace = self.currentNamespace()
+
+        pose.applyTo(*selection, namespace=namespace)
+
+    @undo(state=False)
+    def pickRelativeTarget(self):
+        """
+        Updates the relative target based on the active selection.
+
+        :rtype: None
+        """
+
+        # Evaluate active selection
+        #
+        selection = self.getSelection()
+        selectionCount = len(selection)
+
+        if selectionCount == 1:
+
+            node = selection[0]
+
+            self.relativeTargetAction.setWhatsThis(node.fullPathName())
+            self.relativeTargetAction.setText(f'Target: {node.name()}')
+
+        else:
+
+            log.warning('Please pick 1 node to set as a relative target!')
+
+    @undo(name='Apply Relative Pose')
+    def applyRelativePose(self, target, pose):
+        """
+        Applies the supplied pose, relative, the specified target.
+
+        :type target: mpynode.MPyNode
+        :type pose: pose.Pose
+        :rtype: None
+        """
+
+        selection = self.getSelection(sort=True)
+        namespace = self.currentNamespace()
+
+        pose.applyRelativeTo(selection, target, namespace=namespace)
+
+    @undo(name='Apply Animation')
+    def applyAnimation(self, pose, insertAt=None):
+        """
+        Applies the supplied animation to the active selection.
+
+        :type pose: pose.Pose
+        :type insertAt: Union[int, None]
+        :rtype: None
+        """
+
+        selection = self.getSelection()
+        namespace = self.currentNamespace()
+
+        pose.applyAnimationTo(*selection, insertAt=insertAt, namespace=namespace)
+
+    @undo(name='Apply Relative Animation')
+    def applyRelativeAnimation(self, insertAt, pose):
+        """
+        Applies the supplied animation to the active selection at the specified time.
+
+        :type insertAt: int
+        :type pose: pose.Pose
+        :rtype: None
+        """
+
+        selection = self.getSelection()
+        namespace = self.currentNamespace()
+
+        pose.applyAnimationTo(*selection, insertAt=insertAt, namespace=namespace)
+
+    @undo(state=False)
+    def copyPose(self):
+        """
+        Copies the selected pose to the internal clipboard.
+
+        :rtype: None
+        """
+
+        self._poseClipboard = poseutils.createPose(*self.getSelection())
+
+    @undo(name='Paste Pose')
+    def pastePose(self):
+        """
+        Pastes the pose from the internal clipboard onto the active selection.
+
+        :rtype: None
+        """
+
+        # Check if clipboard is empty
+        #
+        if self._poseClipboard is None:
+
+            log.warning('No pose to paste from clipboard!')
+            return
+
+        # Apply pose to selection
+        #
+        selection = self.getSelection()
+        namespace = self.currentNamespace()
+
+        self._poseClipboard.applyTo(*selection, namespace=namespace)
+
+    @undo(name='Reset Pose')
+    def resetPose(self, skipUserAttributes=False):
+        """
+        Resets the transforms on the active selection.
+
+        :type skipUserAttributes: bool
+        :rtype: None
+        """
+
+        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
+
+            node.resetTransform(skipUserAttributes=skipUserAttributes)
+
+    @undo(state=False)
+    def holdPose(self):
+        """
+        Copies the pose transform values from the active selection.
+
+        :rtype: None
+        """
+
+        self._matrixClipboard = poseutils.createPose(*self.getSelection())
+
+    @undo(name='Fetch Pose')
+    def fetchPose(self):
+        """
+        Applies the pose transforms to the active selection.
+
+        :rtype: None
+        """
+
+        # Check if clipboard is empty
+        #
+        if self._matrixClipboard is None:
+
+            log.warning('No pose to fetch from clipboard!')
+            return
+
+        # Apply transforms to active selection
+        #
+        translateEnabled, rotateEnabled, scaleEnabled = self.transformOptions()
+        selection = self.getSelection(sort=True)
+
+        self._matrixClipboard.applyTransformsTo(
+            *selection,
+            worldSpace=True,
+            skipTranslate=(not translateEnabled),
+            skipRotate=(not rotateEnabled),
+            skipScale=(not scaleEnabled)
+        )
+
+    @undo(name='Mirror Pose')
+    def mirrorPose(self, pull=False):
+        """
+        Mirrors the transforms on the active selection.
+
+        :type pull: bool
+        :rtype: None
+        """
+
+        # Create pose from selection
+        #
+        selection = self.getSelection()
+        opposites = [node.getOppositeNode() for node in selection]
+        extendedSelection = set(selection).union(set(opposites))
+
+        pose = poseutils.createPose(*extendedSelection)
+
+        # Evaluate mirror operation
+        #
+        if pull:
+
+            pose.applyOppositeTo(*opposites)
+
+        else:
+
+            pose.applyOppositeTo(*selection)
+
+    @undo(name='Mirror Animation')
+    def mirrorAnimation(self, insertAt, animationRange, pull=False):
+        """
+        Mirrors the animation on the active selection.
+
+        :type insertAt: Union[int, float]
+        :type animationRange: Tuple[int, int]
+        :type pull: bool
+        :rtype: None
+        """
+
+        # Create pose from selection
+        #
+        selection = self.getSelection()
+        opposites = [node.getOppositeNode() for node in selection]
+        extendedSelection = set(selection).union(set(opposites))
+
+        pose = poseutils.createPose(*extendedSelection, skipKeys=False)
+
+        # Evaluate mirror operation
+        #
+        if pull:
+
+            pose.applyAnimationOppositeTo(*opposites, insertAt=insertAt, animationRange=animationRange)
+
+        else:
+
+            pose.applyAnimationOppositeTo(*selection, insertAt=insertAt, animationRange=animationRange)
+
+    @undo(state=False)
     def refresh(self):
         """
         Refreshes the file item model's current working directory.
@@ -571,35 +1182,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
     # endregion
 
     # region Slots
-    @QtCore.Slot(bool)
-    def on_setProjectFolderAction_triggered(self, checked=False):
-        """
-        Slot method for the setProjectFolderAction's `triggered` signal.
-
-        :type checked: bool
-        :rtype: None
-        """
-
-        # Prompt user for save path
-        #
-        directory = QtWidgets.QFileDialog.getExistingDirectory(
-            parent=self,
-            caption='Select Project Folder',
-            dir=self.cwd(),
-            options=QtWidgets.QFileDialog.ShowDirsOnly
-        )
-
-        # Check if path is valid
-        # A null value will be returned if the user exited
-        #
-        if os.path.isdir(directory) and os.path.exists(directory):
-
-            self.setCwd(directory)
-
-        else:
-
-            log.info('Operation aborted.')
-
     @QtCore.Slot(str)
     def on_pathLineEdit_textChanged(self, text):
         """
@@ -664,8 +1246,18 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        nodes = self.scene.getNodesByPattern(*self.controllerPatterns())
-        self.scene.setSelection([node.object() for node in nodes])
+        self.selectControls(visible=False)
+
+    @QtCore.Slot(bool)
+    def on_selectVisibleControlsAction_triggered(self, checked=False):
+        """
+        Slot method for the selectVisibleControlsAction's `triggered` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.selectControls(visible=True)
 
     @QtCore.Slot(bool)
     def on_addFolderAction_triggered(self, checked=False):
@@ -676,47 +1268,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Prompt user for folder name
-        #
-        name, response = QtWidgets.QInputDialog.getText(
-            self,
-            'Create New Folder',
-            'Enter Name:',
-            QtWidgets.QLineEdit.Normal
-        )
-
-        if not response:
-
-            log.info('Operation aborted...')
-            return
-
-        # Check if name is unique
-        # Be sure to slugify the name before processing!
-        #
-        name = stringutils.slugify(name)
-        absolutePath = os.path.join(self.currentPath(absolute=True), name)
-
-        if os.path.exists(absolutePath) or stringutils.isNullOrEmpty(name):
-
-            # Notify user of invalid name
-            #
-            response = QtWidgets.QMessageBox.warning(
-                self,
-                'Create New Folder',
-                'The supplied name is not unique!',
-                QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel
-            )
-
-            if response == QtWidgets.QMessageBox.Ok:
-
-                self.addFolderAction.trigger()
-
-        else:
-
-            # Create new directory
-            #
-            os.mkdir(absolutePath)
-            self.refresh()
+        self.addFolder()
 
     @QtCore.Slot(bool)
     def on_addPoseAction_triggered(self, checked=False):
@@ -727,27 +1279,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Prompt user for pose name
-        #
-        name, response = QtWidgets.QInputDialog.getText(
-            self,
-            'Create New Pose',
-            'Enter Name:',
-            QtWidgets.QLineEdit.Normal
-        )
-
-        if not response:
-
-            log.info('Operation aborted...')
-            return
-
-        # Export pose
-        #
-        filename = '{name}.pose'.format(name=name)
-        absolutePath = os.path.join(self.currentPath(absolute=True), filename)
-        poseutils.exportPoseFromNodes(absolutePath, self.getSelection(), name=name)
-
-        self.refresh()
+        self.addPose()
 
     @QtCore.Slot(bool)
     def on_addAnimationAction_triggered(self, checked=False):
@@ -758,27 +1290,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Prompt user for animation name
-        #
-        name, response = QtWidgets.QInputDialog.getText(
-            self,
-            'Create New Animation',
-            'Enter Name:',
-            QtWidgets.QLineEdit.Normal
-        )
-
-        if not response:
-
-            log.info('Operation aborted...')
-            return
-
-        # Export animation
-        #
-        filename = '{name}.anim'.format(name=name)
-        absolutePath = os.path.join(self.currentPath(absolute=True), filename)
-        poseutils.exportPoseFromNodes(absolutePath, self.getSelection(), name=name, skipKeys=False, skipLayers=False)
-
-        self.refresh()
+        self.addAnimation()
 
     @QtCore.Slot(bool)
     def on_selectAssociatedNodesAction_triggered(self, checked=False):
@@ -818,48 +1330,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Get selected file
-        #
-        path = self.selectedPath()
-
-        if path is None:
-
-            log.warning('No file selected!')
-            return
-
-        # Prompt user for new name
-        #
-        name, response = QtWidgets.QInputDialog.getText(
-            self,
-            'Rename File',
-            'Enter Name:',
-            echo=QtWidgets.QLineEdit.Normal,
-            text=path.name
-        )
-
-        if not response:
-
-            log.info('Operation aborted...')
-            return
-
-        # Check if name is unique
-        #
-        isUnique = all([sibling.basename.lower() != name.lower() for sibling in path.siblings])
-
-        if not isUnique:
-
-            QtWidgets.QMessageBox.warning(self, 'Rename File', 'File name already exists!')
-            return
-
-        # Rename file
-        #
-        source = str(path)
-
-        filename = '{name}.{extension}'.format(name=name, extension=path.extension) if path.isFile() else name
-        destination = os.path.join(str(path.parent), filename)
-
-        os.rename(source, destination)
-        self.refresh()
+        self.renameFile()
 
     @QtCore.Slot(bool)
     def on_updateFileAction_triggered(self, checked=False):
@@ -870,28 +1341,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Get selected file
-        #
-        path = self.selectedPath()
-
-        if path is None:
-
-            log.warning('No file selected!')
-            return
-
-        # Check which operation to perform
-        #
-        if path.extension == 'pose':
-
-            poseutils.exportPoseFromNodes(str(path), self.getSelection())
-
-        elif path.extension == 'anim':
-
-            poseutils.exportPoseFromNodes(str(path), self.getSelection(), skipKeys=False, skipLayers=False)
-
-        else:
-
-            pass
+        self.updateFile()
 
     @QtCore.Slot(bool)
     def on_deleteFileAction_triggered(self, checked=False):
@@ -902,40 +1352,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Get selected file
-        #
-        path = self.selectedPath()
-
-        if path is None:
-
-            log.warning('No file selected!')
-            return
-
-        # Confirm user wants to delete file
-        #
-        response = QtWidgets.QMessageBox.warning(
-            self,
-            'Delete File',
-            'Are you sure you want to delete this file?',
-            QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel
-        )
-
-        if response != QtWidgets.QMessageBox.Ok:
-
-            log.info('Operation aborted...')
-            return
-
-        # Check if this is a directory
-        #
-        if path.isDir():
-
-            os.rmdir(str(path))
-            self.refresh()
-
-        else:
-
-            os.remove(str(path))
-            self.refresh()
+        self.deleteFile()
 
     @QtCore.Slot(bool)
     def on_openInExplorerAction_triggered(self, checked=False):
@@ -946,17 +1363,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Check if user path exists
-        #
-        path = self.currentPath(absolute=True)
-
-        if os.path.exists(path):
-
-            subprocess.Popen(r'explorer /select, "{path}"'.format(path=path))
-
-        else:
-
-            log.warning('Cannot locate directory: %s' % path)
+        self.openInExplorer()
 
     @QtCore.Slot(QtCore.QModelIndex)
     def on_fileListView_doubleClicked(self, index):
@@ -1069,21 +1476,23 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         if path.extension == 'pose':
 
             pose = poseutils.importPose(str(path))
-            pose.applyTo(*self.getSelection())
+            self.applyPose(pose)
 
         elif path.extension == 'anim':
 
             pose = poseutils.importPose(str(path))
-            pose.applyAnimationTo(*self.getSelection())
+            insertAt = self.getInsertTime()
+
+            self.applyAnimation(pose, insertAt=insertAt)
 
         else:
 
-            log.warning('No file selected!')
+            log.warning('No pose file selected!')
 
     @QtCore.Slot(bool)
-    def on_applyRelativePushButton_clicked(self, checked=False):
+    def on_applyRelativePosePushButton_clicked(self, checked=False):
         """
-        Slot method for the applyRelativePushButton's `clicked` signal.
+        Slot method for the applyRelativePosePushButton's `clicked` signal.
 
         :type checked: bool
         :rtype: None
@@ -1114,18 +1523,11 @@ class QLibraryTab(qabstracttab.QAbstractTab):
             # Apply pose relative to target
             #
             pose = poseutils.importPose(str(path))
-            pose.applyRelativeTo(self.getSelection(sort=True), target)
-
-        elif path.extension == 'anim':
-
-            # Insert at animation at current time
-            #
-            pose = poseutils.importPose(str(path))
-            pose.applyAnimationTo(*self.getSelection(), insertAt=self.scene.time)
+            self.applyRelativePose(target, pose)
 
         else:
 
-            log.warning('No file selected!')
+            log.warning('No pose file selected!')
 
     @QtCore.Slot(bool)
     def on_pickRelativeTargetAction_triggered(self, checked=False):
@@ -1136,19 +1538,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        selection = self.getSelection()
-        selectionCount = len(selection)
-
-        if selectionCount == 1:
-
-            node = selection[0]
-
-            self.relativeTargetAction.setWhatsThis(node.fullPathName())
-            self.relativeTargetAction.setText(f'Target: {node.name()}')
-
-        else:
-
-            log.warning('Please pick 1 node to set as a relative target!')
+        self.pickRelativeTarget()
 
     @QtCore.Slot(bool)
     def on_copyPosePushButton_clicked(self, checked=False):
@@ -1159,7 +1549,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        self._poseClipboard = poseutils.createPose(*self.getSelection())
+        self.copyPose()
 
     @QtCore.Slot(bool)
     def on_pastePosePushButton_clicked(self, checked=False):
@@ -1170,9 +1560,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        if self._poseClipboard is not None:
-
-            self._poseClipboard.applyTo(*self.getSelection())
+        self.pastePose()
 
     @QtCore.Slot(bool)
     def on_zeroPosePushButton_clicked(self, checked=False):
@@ -1183,10 +1571,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
-
-            node.resetTransform(skipUserAttributes=True)
-
+        self.resetPose(skipUserAttributes=True)
 
     @QtCore.Slot(bool)
     def on_resetPosePushButton_clicked(self, checked=False):
@@ -1197,9 +1582,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
-
-            node.resetTransform()
+        self.resetPose(skipUserAttributes=False)
 
     @QtCore.Slot(bool)
     def on_holdTransformPushButton_clicked(self, checked=False):
@@ -1210,7 +1593,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        self._matrixClipboard = poseutils.createPose(*self.getSelection())
+        self.holdPose()
 
     @QtCore.Slot(bool)
     def on_fetchTransformPushButton_clicked(self, checked=False):
@@ -1221,17 +1604,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        if self._matrixClipboard is not None:
-
-            translateEnabled, rotateEnabled, scaleEnabled = self.transformOptions()
-
-            self._matrixClipboard.applyMatricesTo(
-                *self.getSelection(),
-                worldSpace=True,
-                skipTranslate=(not translateEnabled),
-                skipRotate=(not rotateEnabled),
-                skipScale=(not scaleEnabled)
-            )
+        self.fetchPose()
 
     @QtCore.Slot(bool)
     def on_mirrorPosePushButton_clicked(self, checked=False):
@@ -1242,9 +1615,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
-
-            node.mirrorTransform()
+        self.mirrorPose(pull=False)
 
     @QtCore.Slot(bool)
     def on_pullPosePushButton_clicked(self, checked=False):
@@ -1255,9 +1626,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
-
-            node.mirrorTransform(pull=True)
+        self.mirrorPose(pull=True)
 
     @QtCore.Slot(bool)
     def on_mirrorAnimationPushButton_clicked(self, checked=False):
@@ -1268,13 +1637,8 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
-
-            node.mirrorTransform(
-                includeKeys=True,
-                animationRange=self.getAnimationRange(),
-                insertAt=self.getTime()
-            )
+        startTime, endTime, insertAt = self.getMirrorRange()
+        self.mirrorAnimation(insertAt, (startTime, endTime), pull=False)
 
     @QtCore.Slot(bool)
     def on_pullAnimationPushButton_clicked(self, checked=False):
@@ -1285,12 +1649,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
-
-            node.mirrorTransform(
-                pull=True,
-                includeKeys=True,
-                animationRange=self.getAnimationRange(),
-                insertAt=self.getTime()
-            )
+        startTime, endTime, insertAt = self.getMirrorRange()
+        self.mirrorAnimation(insertAt, (startTime, endTime), pull=True)
     # endregion
