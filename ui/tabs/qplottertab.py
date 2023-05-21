@@ -2,6 +2,7 @@ from Qt import QtCore, QtWidgets, QtGui
 from maya.api import OpenMaya as om
 from dcc.python import stringutils
 from dcc.ui import qtimespinbox
+from dcc.maya.decorators.undo import undo, commit
 from . import qabstracttab
 from ...libs import poseutils
 
@@ -129,7 +130,8 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         #
         self.plotButtonGroup.setId(self.bakeKeysRadioButton, 0)
         self.plotButtonGroup.setId(self.preserveKeysRadioButton, 1)
-        self.plotButtonGroup.setId(self.resampleKeysRadioButton, 2)
+        self.plotButtonGroup.setId(self.revertKeysRadioButton, 2)
+        self.plotButtonGroup.setId(self.resampleKeysRadioButton, 3)
 
     def loadSettings(self, settings):
         """
@@ -253,7 +255,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         self.stepCheckBox.setChecked(enabled)
 
-    def getAnimationRange(self):
+    def animationRange(self):
         """
         Returns the current animation range.
 
@@ -264,6 +266,19 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         endTime = self.endTimeSpinBox.value() if self.endTimeCheckBox.isChecked() else self.scene.endTime
 
         return startTime, endTime
+
+    def setAnimationRange(self, animationRange):
+        """
+        Updates the current animation range.
+
+        :type animationRange: Tuple[int, int]
+        :rtype: None
+        """
+
+        startTime, endTime = animationRange
+
+        self.startTimeSpinBox.setValue(startTime)
+        self.endTimeSpinBox.setValue(endTime)
 
     def getSelectedIndex(self, topLevel=False):
         """
@@ -330,6 +345,60 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
             return self.guides[selectedIndex.row()]
 
+    @undo(name='Plot Transforms')
+    def plot(self):
+        """
+        Plots the active selection to the selected guide.
+
+        :rtype: None
+        """
+
+        # Get selected guide
+        #
+        guide = self.getSelectedGuide()
+
+        if guide is None:
+
+            log.warning('No guide selected to plot to!')
+            return
+
+        # Get selected nodes
+        #
+        selection = self.scene.selection(apiType=om.MFn.kTransform)
+        selectionCount = len(selection)
+
+        if selectionCount == 0:
+
+            log.warning('No nodes selected to plot to!')
+            return
+
+        # Check which operation to perform
+        #
+        option = self.plotOption()
+        animationRange = self.animationRange()
+        step = self.step() if self.stepEnabled() else 1
+        preserveKeys = option == 1
+        snapKeys = self.snapKeys()
+
+        if option == 0 or option == 1:  # Bake/Preserve keys
+
+            guide.bakeTransformationsTo(
+                *selection,
+                animationRange=animationRange,
+                step=step,
+                snapKeys=snapKeys,
+                preserveKeys=preserveKeys
+            )
+
+        elif option == 2:  # Revert keys
+
+            guide.applyAnimationTo(*selection)
+
+        else:  # Resample keys
+
+            raise NotImplementedError('Resample keys has not been implemented!')
+    
+    @undo(state=False)
     def synchronize(self):
         """
         Synchronizes the tree view items with the internal guide objects.
@@ -472,7 +541,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         pose = poseutils.createPose(
             *self.scene.selection(),
-            animationRange=self.getAnimationRange(),
+            animationRange=self.animationRange(),
             skipKeys=False,
             skipTransformations=False
         )
@@ -579,41 +648,5 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        # Get selected guide
-        #
-        guide = self.getSelectedGuide()
-
-        if guide is None:
-
-            log.warning('No guide selected to plot to!')
-            return
-
-        # Get selected nodes
-        #
-        selection = self.scene.selection(apiType=om.MFn.kTransform)
-        selectionCount = len(selection)
-
-        if selectionCount == 0:
-
-            log.warning('No nodes selected to plot to!')
-            return
-
-        # Check which operation to perform
-        #
-        option = self.plotOption()
-        step = self.step() if self.stepEnabled() else 1
-        preserveKeys = option == 1
-        snapKeys = self.snapKeys()
-
-        if option == 0 or option == 1:  # Bake/Preserve keys
-
-            guide.bakeTransformationsTo(*selection, step=step, snapKeys=snapKeys, preserveKeys=preserveKeys)
-
-        elif option == 2:  # Revert keys
-
-            guide.applyAnimationTo(*selection)
-
-        else:  # Resample keys
-
-            raise NotImplementedError('Resample keys has not been implemented!')
+        self.plot()
     # endregion
