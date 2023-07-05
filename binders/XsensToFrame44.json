@@ -1,0 +1,538 @@
+{
+	"__class__": "Retargeter",
+	"__module__": "ezposer.libs.retargeter",
+	"name": "Xsens to Frame44",
+	"root": {
+		"__class__": "JointRetargeter",
+		"__module__": "ezposer.libs.retargeter",
+		"binder": {
+			"__class__": "RetargetBinder",
+			"__module__": "ezposer.libs.retargeter",
+			"type": 0,
+			"side": 0,
+			"source": ["Reference"],
+			"target": ["Bone_X_Root"],
+			"fkControls": ["_Node_Motion"],
+			"offsets": [
+				{
+					"__class__": "MMatrix",
+					"__module__": "maya.api.OpenMaya",
+					"args": 
+					[
+						[-1.0, 0.0, 0.0, 0.0],
+						[0.0, 0.0, 1.0, 0.0],
+						[0.0, 1.0, 0.0, 0.0],
+						[0.0, 0.0, 0.0, 1.0]
+					],
+					"kwargs": {}
+				}
+			]
+		},
+		"children": [
+			{
+				"__class__": "JointRetargeter",
+				"__module__": "ezposer.libs.retargeter",
+				"binder": {
+					"__class__": "RetargetBinder",
+					"__module__": "ezposer.libs.retargeter",
+					"type": 1,
+					"side": 0,
+					"source": ["Hips"],
+					"target": ["Bone_X_Pelvis"],
+					"fkControls": ["_Ctrl_Waist"],
+					"offsets": [
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, 1.0, 0.0, 0.0],
+								[0.0, 0.0, 1.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						}
+					]
+				},
+				"sizeHint": "height",
+				"children":
+				[
+					{
+						"__class__": "ChainRetargeter",
+						"__module__": "ezposer.libs.retargeter",
+						"binder": {
+							"__class__": "RetargetBinder",
+							"__module__": "ezposer.libs.retargeter",
+							"type": 4,
+							"side": 0,
+							"source": ["Spine", "Spine1", "Spine2", "Spine3"],
+							"target": ["Bone_X_Spine1", "Bone_X_Spine2"],
+							"fkControls": ["_Ctrl_Spine", "_Ctrl_Chest"],
+							"offsets": [
+								{
+									"__class__": "MMatrix",
+									"__module__": "maya.api.OpenMaya",
+									"args": 
+									[
+										[0.0, 1.0, 0.0, 0.0],
+										[0.0, 0.0, 1.0, 0.0],
+										[1.0, 0.0, 0.0, 0.0],
+										[0.0, 0.0, 0.0, 1.0]
+									],
+									"kwargs": {}
+								}
+							]
+						},
+						"children": [
+							{
+								"__class__": "JointRetargeter",
+								"__module__": "ezposer.libs.retargeter",
+								"binder": {
+									"__class__": "RetargetBinder",
+									"__module__": "ezposer.libs.retargeter",
+									"type": 5,
+									"side": 1,
+									"source": ["LeftShoulder"],
+									"target": ["Bone_X_Clavicle_L"],
+									"fkControls": ["_Ctrl_Shoulder_L"],
+									"offsets": [
+										{
+											"__class__": "MMatrix",
+											"__module__": "maya.api.OpenMaya",
+											"args": 
+											[
+												[1.0, 0.0, 0.0, 0.0],
+												[0.0, 1.0, 0.0, 0.0],
+												[0.0, 0.0, 1.0, 0.0],
+												[0.0, 0.0, 0.0, 1.0]
+											],
+											"kwargs": {}
+										}
+									]
+								},
+								"skipRotateX": true,
+								"children": [
+									{
+										"__class__": "LimbRetargeter",
+										"__module__": "ezposer.libs.retargeter",
+										"binder": {
+											"__class__": "RetargetBinder",
+											"__module__": "ezposer.libs.retargeter",
+											"type": 6,
+											"side": 1,
+											"source": ["LeftArm", "LeftForeArm", "LeftHand"],
+											"target": ["Bone_X_UpperArm_L", "Bone_X_ForeArm_L", "Bone_X_Hand_L"],
+											"fkControls": ["_Ctrl_FK_Bicep_L", "_Ctrl_FK_Elbow_L", "_Ctrl_Hand_L"],
+											"ikControls": ["_Ctrl_Arm_L", "_Ctrl_Elbow_L", "_Ctrl_Arm_IK_L"],
+											"switchControl": "_Ctrl_Hand_L",
+											"fkHints": {
+												"IK___________________FK": 100.0,
+												"World___ArmOrient___Local": 0.0,
+												"World____IKcontrol____Local": 100.0,
+												"World_____Wrist_____Local": 0.0,
+												"No___WorldWristLock___Yes": 100.0,
+												"World____ElbowIK____Local": 100.0
+												
+											},
+											"ikHints": {
+												"IK___________________FK": 0.0,
+												"World___ArmOrient___Local": 0.0,
+												"World____IKcontrol____Local": 100.0,
+												"World_____Wrist_____Local": 0.0,
+												"No___WorldWristLock___Yes": 0.0,
+												"World____ElbowIK____Local": 100.0
+												
+											},
+											"poleHandle": "_Ctrl_ElbowLookAt_L",
+											"offsets": [
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[1.0, 0.0, 0.0, 0.0],
+														[0.0, 0.0, -1.0, 0.0],
+														[0.0, 1.0, 0.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												},
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[1.0, 0.0, 0.0, 0.0],
+														[0.0, 0.0, -1.0, 0.0],
+														[0.0, 1.0, 0.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												},
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[1.0, 0.0, 0.0, 0.0],
+														[0.0, 1.0, 0.0, 0.0],
+														[0.0, 0.0, 1.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												}
+											]
+										},
+										"children": []
+									}
+								]
+							},
+							{
+								"__class__": "JointRetargeter",
+								"__module__": "ezposer.libs.retargeter",
+								"binder": {
+									"__class__": "RetargetBinder",
+									"__module__": "ezposer.libs.retargeter",
+									"type": 5,
+									"side": 2,
+									"source": ["RightShoulder"],
+									"target": ["Bone_X_Clavicle_R"],
+									"fkControls": ["_Ctrl_Shoulder_R"],
+									"offsets": [
+										{
+											"__class__": "MMatrix",
+											"__module__": "maya.api.OpenMaya",
+											"args": 
+											[
+												[-1.0, 0.0, 0.0, 0.0],
+												[0.0, 1.0, 0.0, 0.0],
+												[0.0, 0.0, -1.0, 0.0],
+												[0.0, 0.0, 0.0, 1.0]
+											],
+											"kwargs": {}
+										}
+									]
+								},
+								"skipRotateX": true,
+								"children": [
+									{
+										"__class__": "LimbRetargeter",
+										"__module__": "ezposer.libs.retargeter",
+										"binder": {
+											"__class__": "RetargetBinder",
+											"__module__": "ezposer.libs.retargeter",
+											"type": 6,
+											"side": 2,
+											"source": ["RightArm", "RightForeArm", "RightHand"],
+											"target": ["Bone_X_UpperArm_R", "Bone_X_ForeArm_R", "Bone_X_Hand_R"],
+											"fkControls": ["_Ctrl_FK_Bicep_R", "_Ctrl_FK_Elbow_R", "_Ctrl_Hand_R"],
+											"ikControls": ["_Ctrl_Arm_R", "_Ctrl_Elbow_L", "_Ctrl_Arm_IK_R"],
+											"switchControl": "_Ctrl_Hand_R",
+											"fkHints": {
+												"IK___________________FK": 100.0,
+												"World___ArmOrient___Local": 0.0,
+												"World____IKcontrol____Local": 100.0,
+												"World_____Wrist_____Local": 0.0,
+												"No___WorldWristLock___Yes": 100.0,
+												"World____ElbowIK____Local": 100.0
+												
+											},
+											"ikHints": {
+												"IK___________________FK": 0.0,
+												"World___ArmOrient___Local": 0.0,
+												"World____IKcontrol____Local": 100.0,
+												"World_____Wrist_____Local": 0.0,
+												"No___WorldWristLock___Yes": 0.0,
+												"World____ElbowIK____Local": 100.0
+												
+											},
+											"poleHandle": "_Ctrl_ElbowLookAt_R",
+											"offsets": [
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[-1.0, 0.0, 0.0, 0.0],
+														[0.0, 0.0, -1.0, 0.0],
+														[0.0, -1.0, 0.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												},
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[-1.0, 0.0, 0.0, 0.0],
+														[0.0, 0.0, -1.0, 0.0],
+														[0.0, -1.0, 0.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												},
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[-1.0, 0.0, 0.0, 0.0],
+														[0.0, 1.0, 0.0, 0.0],
+														[0.0, 0.0, -1.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												}
+											]
+										},
+										"limbType": 1,
+										"children": []
+									}
+								]
+							},
+							{
+								"__class__": "JointRetargeter",
+								"__module__": "ezposer.libs.retargeter",
+								"binder": {
+									"__class__": "RetargetBinder",
+									"__module__": "ezposer.libs.retargeter",
+									"type": 8,
+									"side": 0,
+									"source": ["Neck"],
+									"target": ["Bone_X_Neck"],
+									"fkControls": ["_Ctrl_Neck"],
+									"offsets": [
+										{
+											"__class__": "MMatrix",
+											"__module__": "maya.api.OpenMaya",
+											"args": 
+											[
+												[0.0, 1.0, 0.0, 0.0],
+												[0.0, 0.0, 1.0, 0.0],
+												[1.0, 0.0, 0.0, 0.0],
+												[0.0, 0.0, 0.0, 1.0]
+											],
+											"kwargs": {}
+										}
+									]
+								},
+								"children": [
+									{
+										"__class__": "JointRetargeter",
+										"__module__": "ezposer.libs.retargeter",
+										"binder": {
+											"__class__": "RetargetBinder",
+											"__module__": "ezposer.libs.retargeter",
+											"type": 9,
+											"side": 0,
+											"source": ["Head"],
+											"target": ["Bone_X_Head"],
+											"fkControls": ["_Ctrl_Head"],
+											"offsets": [
+												{
+													"__class__": "MMatrix",
+													"__module__": "maya.api.OpenMaya",
+													"args": 
+													[
+														[0.0, 1.0, 0.0, 0.0],
+														[0.0, 0.0, 1.0, 0.0],
+														[1.0, 0.0, 0.0, 0.0],
+														[0.0, 0.0, 0.0, 1.0]
+													],
+													"kwargs": {}
+												}
+											]
+										},
+										"children": []
+									}
+								]
+							}
+						]
+					}
+				]
+			},
+			{
+				"__class__": "LimbRetargeter",
+				"__module__": "ezposer.libs.retargeter",
+				"binder": {
+					"__class__": "RetargetBinder",
+					"__module__": "ezposer.libs.retargeter",
+					"type": 2,
+					"side": 1,
+					"source": ["LeftUpLeg", "LeftLeg", "LeftFoot"],
+					"target": ["Bone_X_Thigh_L", "Bone_X_Calf_L", "Bone_X_Ankle_L"],
+					"fkControls": [],
+					"ikControls": ["_Ctrl_LegStretch_L", "_Ctrl_Knee_L", "_Ctrl_Foot_L"],
+					"switchControl": "_Ctrl_Foot_L",
+					"ikHints": {
+						"WORLD___________LOCAL": 0.0,
+						"Root____KneePole____Foot": 0.0,
+						"Local___KneeLock___World": 0.0
+						
+					},
+					"poleHandle": "_Ctrl_KneeLookAt_L",
+					"offsets": [
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, -1.0, 0.0, 0.0],
+								[0.0, 0.0, -1.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						},
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, -1.0, 0.0, 0.0],
+								[0.0, 0.0, -1.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						},
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, 0.0, 1.0, 0.0],
+								[0.0, -1.0, 0.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						}
+					]
+				},
+				"children": [
+					{
+						"__class__": "JointRetargeter",
+						"__module__": "ezposer.libs.retargeter",
+						"binder": {
+							"__class__": "RetargetBinder",
+							"__module__": "ezposer.libs.retargeter",
+							"type": 3,
+							"side": 1,
+							"source": ["LeftToeBase"],
+							"target": ["Bone_X_Toes_L"],
+							"fkControls": ["_Ctrl_Toe_L"],
+							"offsets": [
+								{
+									"__class__": "MMatrix",
+									"__module__": "maya.api.OpenMaya",
+									"args": 
+									[
+										[0.0, 0.0, 1.0, 0.0],
+										[0.0, -1.0, 0.0, 0.0],
+										[1.0, 0.0, 0.0, 0.0],
+										[0.0, 0.0, 0.0, 1.0]
+									],
+									"kwargs": {}
+								}
+							]
+						},
+						"children": []
+					}
+				]
+			},
+			{
+				"__class__": "LimbRetargeter",
+				"__module__": "ezposer.libs.retargeter",
+				"binder": {
+					"__class__": "RetargetBinder",
+					"__module__": "ezposer.libs.retargeter",
+					"type": 2,
+					"side": 2,
+					"source": ["RightUpLeg", "RightLeg", "RightFoot"],
+					"target": ["Bone_X_Thigh_R", "Bone_X_Calf_R", "Bone_X_Ankle_R"],
+					"fkControls": [],
+					"ikControls": ["_Ctrl_LegStretch_R", "_Ctrl_Knee_R", "_Ctrl_Foot_R"],
+					"switchControl": "_Ctrl_Foot_R",
+					"ikHints": {
+						"WORLD___________LOCAL": 0.0,
+						"Root____KneePole____Foot": 0.0,
+						"Local___KneeLock___World": 0.0
+						
+					},
+					"poleHandle": "_Ctrl_KneeLookAt_R",
+					"offsets": [
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, -1.0, 0.0, 0.0],
+								[0.0, 0.0, -1.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						},
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, -1.0, 0.0, 0.0],
+								[0.0, 0.0, -1.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						},
+						{
+							"__class__": "MMatrix",
+							"__module__": "maya.api.OpenMaya",
+							"args": 
+							[
+								[0.0, 0.0, 1.0, 0.0],
+								[0.0, -1.0, 0.0, 0.0],
+								[1.0, 0.0, 0.0, 0.0],
+								[0.0, 0.0, 0.0, 1.0]
+							],
+							"kwargs": {}
+						}
+					]
+				},
+				"children": [
+					{
+						"__class__": "JointRetargeter",
+						"__module__": "ezposer.libs.retargeter",
+						"binder": {
+							"__class__": "RetargetBinder",
+							"__module__": "ezposer.libs.retargeter",
+							"type": 3,
+							"side": 2,
+							"source": ["RightToeBase"],
+							"target": ["Bone_X_Toes_R"],
+							"fkControls": ["_Ctrl_Toe_R"],
+							"offsets": [
+								{
+									"__class__": "MMatrix",
+									"__module__": "maya.api.OpenMaya",
+									"args": 
+									[
+										[0.0, 0.0, 1.0, 0.0],
+										[0.0, -1.0, 0.0, 0.0],
+										[1.0, 0.0, 0.0, 0.0],
+										[0.0, 0.0, 0.0, 1.0]
+									],
+									"kwargs": {}
+								}
+							]
+						},
+						"children": []
+					}
+				]
+			}
+		]
+	}
+}
