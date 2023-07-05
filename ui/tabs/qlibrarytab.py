@@ -49,6 +49,30 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         # Declare public variables
         #
+        self.libraryGroupBox = None
+        self.applyPosePushButton = None
+        self.applyPoseSlider = None
+        self.applyRelativePosePushButton = None
+        self.fileListView = None
+        self.pathLineEdit = None
+
+        self.quickPoseGroupBox = None
+        self.copyPosePushButton = None
+        self.pastePosePushButton = None
+        self.zeroPosePushButton = None
+        self.resetPosePushButton = None
+        self.holdTransformPushButton = None
+        self.fetchTransformPushButton = None
+        self.matchWidget = None
+        self.matchTranslateCheckBox = None
+        self.matchRotateCheckBox = None
+        self.matchScaleCheckBox = None
+        self.matchButtonGroup = None
+        self.mirrorPosePushButton = None
+        self.mirrorAnimationPushButton = None
+        self.pullAnimationPushButton = None
+        self.pullPosePushButton = None
+
         self.directoryAction = None
         self.parentDirectoryAction = None
         self.refreshDirectoryAction = None
@@ -78,12 +102,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.applyRelativePoseMenu = None
         self.relativeTargetAction = None
         self.pickRelativeTargetAction = None
-
-        self.fetchMenu = None
-        self.transformActionGroup = None
-        self.matchTranslateAction = None
-        self.matchRotateAction = None
-        self.matchScaleAction = None
 
         self.mirrorMenu = None
         self.mirrorStartTimeWidget = None
@@ -259,33 +277,12 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         # Initialize fetch menu
         #
-        self.matchTranslateAction = QtWidgets.QAction('Translate')
-        self.matchTranslateAction.setObjectName('matchTranslateAction')
-        self.matchTranslateAction.setCheckable(True)
-        self.matchTranslateAction.setChecked(True)
-
-        self.matchRotateAction = QtWidgets.QAction('Rotate')
-        self.matchRotateAction.setObjectName('matchRotateAction')
-        self.matchRotateAction.setCheckable(True)
-        self.matchRotateAction.setChecked(True)
-
-        self.matchScaleAction = QtWidgets.QAction('Scale')
-        self.matchScaleAction.setObjectName('matchScaleAction')
-        self.matchScaleAction.setCheckable(True)
-        self.matchScaleAction.setChecked(False)
-
-        self.transformActionGroup = QtWidgets.QActionGroup(self.fetchTransformPushButton)
-        self.transformActionGroup.setObjectName('transformActionGroup')
-        self.transformActionGroup.setExclusive(False)
-        self.transformActionGroup.addAction(self.matchTranslateAction)
-        self.transformActionGroup.addAction(self.matchRotateAction)
-        self.transformActionGroup.addAction(self.matchScaleAction)
-
-        self.fetchMenu = QtWidgets.QMenu(parent=self.fetchTransformPushButton)
-        self.fetchMenu.setObjectName('fetchMenu')
-        self.fetchMenu.addActions([self.matchTranslateAction, self.matchRotateAction, self.matchScaleAction])
-
-        self.fetchTransformPushButton.setMenu(self.fetchMenu)
+        self.matchButtonGroup = QtWidgets.QButtonGroup(parent=self.matchWidget)
+        self.matchButtonGroup.setObjectName('matchButtonGroup')
+        self.matchButtonGroup.setExclusive(False)
+        self.matchButtonGroup.addButton(self.matchTranslateCheckBox, id=0)
+        self.matchButtonGroup.addButton(self.matchRotateCheckBox, id=1)
+        self.matchButtonGroup.addButton(self.matchScaleCheckBox, id=2)
 
         # Initialize mirror start time widget
         #
@@ -478,7 +475,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: Tuple[bool, bool, bool]
         """
 
-        return [action.isChecked() for action in self.transformActionGroup.actions()]
+        return [action.isChecked() for action in self.matchButtonGroup.buttons()]
 
     def setTransformOptions(self, options):
         """
@@ -488,7 +485,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for (i, action) in enumerate(self.transformActionGroup.actions()):
+        for (i, action) in enumerate(self.matchButtonGroup.buttons()):
 
             action.setChecked(options[i])
 
@@ -847,7 +844,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
             'Rename File',
             'Enter Name:',
             echo=QtWidgets.QLineEdit.Normal,
-            text=path.name
+            text=path.basename
         )
 
         if not response:
@@ -899,7 +896,14 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         elif path.extension == 'anim':
 
-            poseutils.exportPoseFromNodes(str(path), self.getSelection(), skipKeys=False, skipLayers=False)
+            animationRange = poseutils.importPoseRange(str(path))
+            poseutils.exportPoseFromNodes(
+                str(path),
+                self.getSelection(),
+                skipKeys=False,
+                skipLayers=False,
+                animationRange=animationRange
+            )
 
         else:
 

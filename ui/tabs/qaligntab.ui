@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>centralWidget</class>
- <widget class="QWidget" name="centralWidget">
+ <class>QAlignTab</class>
+ <widget class="QWidget" name="QAlignTab">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>350</height>
+    <width>400</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -30,8 +30,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>282</width>
-        <height>306</height>
+        <width>382</width>
+        <height>356</height>
        </rect>
       </property>
      </widget>

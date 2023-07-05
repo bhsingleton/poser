@@ -37,7 +37,37 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Declare public variables
         #
+        self.guideGroupBox = None
+        self.nameLineEdit = None
+        self.guideTreeView = None
         self.guideItemModel = None
+        self.interopWidget = None
+        self.createGuidePushButton = None
+        self.removeGuidePushButton = None
+        self.importGuidePushButton = None
+        self.exportGuidePushButton = None
+
+        self.settingsGroupBox = None
+        self.animationRangeWidget = None
+        self.startTimeWidget = None
+        self.startTimeCheckBox = None
+        self.startTimeSpinBox = None
+        self.endTimeWidget = None
+        self.endTimeCheckBox = None
+        self.endTimeSpinBox = None
+        self.keyframeWidget = None
+        self.bakeKeysRadioButton = None
+        self.preserveKeysRadioButton = None
+        self.revertKeysRadioButton = None
+        self.resampleKeysRadioButton = None
+        self.plotButtonGroup = None
+        self.stepWidget = None
+        self.stepCheckBox = None
+        self.stepSpinBox = None
+        self.snapKeysCheckBox = None
+
+        self.plotGuidePushButton = None
+
         self.guideAction = None
         self.removeGuideAction = None
         self.selectGuideAction = None
@@ -128,10 +158,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Edit keyframe button group
         #
-        self.plotButtonGroup.setId(self.bakeKeysRadioButton, 0)
-        self.plotButtonGroup.setId(self.preserveKeysRadioButton, 1)
-        self.plotButtonGroup.setId(self.revertKeysRadioButton, 2)
-        self.plotButtonGroup.setId(self.resampleKeysRadioButton, 3)
+        self.plotButtonGroup = QtWidgets.QButtonGroup(parent=self.settingsGroupBox)
+        self.plotButtonGroup.addButton(self.bakeKeysRadioButton, id=0)
+        self.plotButtonGroup.addButton(self.preserveKeysRadioButton, id=1)
+        self.plotButtonGroup.addButton(self.revertKeysRadioButton, id=2)
+        self.plotButtonGroup.addButton(self.resampleKeysRadioButton, id=3)
 
     def loadSettings(self, settings):
         """
@@ -531,9 +562,9 @@ class QPlotterTab(qabstracttab.QAbstractTab):
             self.nameLineEdit.setText('')
 
     @QtCore.Slot(bool)
-    def on_addGuidePushButton_clicked(self, checked=False):
+    def on_createGuidePushButton_clicked(self, checked=False):
         """
-        Slot method for the addGuidePushButton's `clicked` signal.
+        Slot method for the createGuidePushButton's `clicked` signal.
 
         :type checked: bool
         :rtype: None

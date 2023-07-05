@@ -1,21 +1,45 @@
 import os
-import json
 import webbrowser
 
 from maya.api import OpenMaya as om
 from mpy import mpynode, mpyfactory
-from PySide2 import QtCore, QtWidgets, QtGui
+from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from six import string_types, integer_types
 from dcc.python import stringutils
 from dcc.json import jsonutils
 from dcc.ui import quicwindow
-from dcc.ui.dialogs import qlistdialog
-from ..libs import rigconfiguration, poseutils
+from ..libs import rigconfiguration
 
 import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+
+
+def onSceneChanged(*args, **kwargs):
+    """
+    Callback method after a scene IO operation has occurred.
+
+    :rtype: None
+    """
+
+    # Check if instance exists
+    #
+    instance = QEzPoser.getInstance()
+
+    if instance is None:
+
+        return
+
+    # Evaluate if instance is still valid
+    #
+    if QtCompat.isValid(instance):
+
+        instance.sceneChanged(*args, **kwargs)
+
+    else:
+
+        log.warning('Unable to process scene changed callback!')
 
 
 class QEzPoser(quicwindow.QUicWindow):
@@ -47,16 +71,29 @@ class QEzPoser(quicwindow.QUicWindow):
         self._cwd = kwargs.get('cwd', self.scene.projectPath)
         self._customNamespace = ''
         self._configurations = self.loadConfigurations()
-        self._currentConfiguration = None
+        self._currentConfiguration = self._configurations[-1]
         self._callbackId = None
 
-        # Check if any configurations were loaded
+        # Declare public variables
         #
-        numConfigurations = len(self.configurations)
+        self.tabControl = None
+        self.libraryTab = None
+        self.plotterTab = None
+        self.alignTab = None
+        self.mocapTab = None
 
-        if numConfigurations > 0:
+        self.fileMenu = None
+        self.setProjectFolderAction = None
 
-            self._currentConfiguration = self.configurations[-1]
+        self.settingsMenu = None
+        self.usePoseNamespaceAction = None
+        self.useCustomNamespaceAction = None
+        self.changeNamespaceAction = None
+        self.separator = None
+        self.changeRigConfigurationAction = None
+
+        self.helpMenu = None
+        self.usingEzPoserAction = None
     # endregion
 
     # region Properties
@@ -84,7 +121,7 @@ class QEzPoser(quicwindow.QUicWindow):
     # region Callbacks
     def sceneChanged(self, *args, **kwargs):
         """
-        Callback method that notifies the tabs of a scene change.
+        Notifies all tabs of a scene change.
 
         :key clientData: Any
         :rtype: None
@@ -110,7 +147,7 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Add scene callback
         #
-        self._callbackId = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, self.sceneChanged)
+        self._callbackId = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneChanged)
 
     def closeEvent(self, event):
         """
@@ -130,55 +167,57 @@ class QEzPoser(quicwindow.QUicWindow):
     # endregion
 
     # region Methods
-    def loadSettings(self):
+    def loadSettings(self, settings):
         """
         Loads the user settings.
 
+        :type settings: QtCore.QSettings
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QEzPoser, self).loadSettings()
+        super(QEzPoser, self).loadSettings(settings)
 
         # Load user preferences
         #
-        self.tabControl.setCurrentIndex(self.settings.value('editor/currentTabIndex', default=0))
-        self.setCwd(self.settings.value('editor/cwd', defaultValue=self.scene.projectPath))
-        self.setNamespaceOption(self.settings.value('editor/namespaceOption', defaultValue=0))
-        self.setCustomNamespace(self.settings.value('editor/customNamespace', defaultValue=''))
-        self.setCurrentConfiguration(self.settings.value('editor/currentConfiguration', defaultValue=-1))
+        self.tabControl.setCurrentIndex(settings.value('editor/currentTabIndex', default=0))
+        self.setCwd(settings.value('editor/cwd', defaultValue=self.scene.projectPath))
+        self.setNamespaceOption(settings.value('editor/namespaceOption', defaultValue=0))
+        self.setCustomNamespace(settings.value('editor/customNamespace', defaultValue=''))
+        self.setCurrentConfiguration(settings.value('editor/currentConfiguration', defaultValue=-1))
 
         # Load tab settings
         #
         for tab in self.iterTabs():
 
-            tab.loadSettings(self.settings)
+            tab.loadSettings(settings)
 
-    def saveSettings(self):
+    def saveSettings(self, settings):
         """
         Saves the user settings.
 
+        :type settings: QtCore.QSettings
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QEzPoser, self).saveSettings()
+        super(QEzPoser, self).saveSettings(settings)
 
         # Save user preferences
         #
-        self.settings.setValue('editor/currentTabIndex', self.currentTabIndex())
-        self.settings.setValue('editor/cwd', self.cwd())
-        self.settings.setValue('editor/namespaceOption', self.namespaceOption())
-        self.settings.setValue('editor/customNamespace', self.customNamespace())
-        self.settings.setValue('editor/currentConfiguration', self.configurations.index(self.currentConfiguration()))
+        settings.setValue('editor/currentTabIndex', self.currentTabIndex())
+        settings.setValue('editor/cwd', self.cwd())
+        settings.setValue('editor/namespaceOption', self.namespaceOption())
+        settings.setValue('editor/customNamespace', self.customNamespace())
+        settings.setValue('editor/currentConfiguration', self.configurations.index(self.currentConfiguration()))
 
         # Save tab settings
         #
         for tab in self.iterTabs():
 
-            tab.saveSettings(self.settings)
+            tab.saveSettings(settings)
 
     def currentTab(self):
         """
@@ -205,9 +244,21 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: iter
         """
 
+        # Iterate through tab control
+        #
         for i in range(self.tabControl.count()):
 
-            yield self.tabControl.widget(i)
+            # Check if widget is valid
+            #
+            widget = self.tabControl.widget(i)
+
+            if QtCompat.isValid(widget):
+
+                yield widget
+
+            else:
+
+                continue
 
     def cwd(self):
         """
@@ -298,13 +349,13 @@ class QEzPoser(quicwindow.QUicWindow):
         """
         Loads all the available rig configurations.
 
-        :rtype: None
+        :rtype: List[rigconfiguration.RigConfiguration]
         """
 
         # Get configuration directory
         #
-        baseDirectory = os.path.dirname(os.path.abspath(__file__))
-        directory = os.path.join(baseDirectory, '..', 'configs')
+        cwd = os.path.dirname(os.path.abspath(__file__))
+        directory = os.path.join(cwd, '..', 'configs')
 
         # Iterate through configuration files
         #

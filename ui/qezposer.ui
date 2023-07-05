@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>QEzPoser</class>
+ <widget class="QMainWindow" name="QEzPoser">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Ez Poser</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="QWidget" name="mainWidget">
    <layout class="QVBoxLayout" name="centralLayout">
     <property name="leftMargin">
      <number>2</number>
@@ -42,7 +42,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideLeft</enum>
@@ -63,6 +63,11 @@
       <widget class="QAlignTab" name="alignTab">
        <attribute name="title">
         <string>Align</string>
+       </attribute>
+      </widget>
+      <widget class="QMocapTab" name="mocapTab">
+       <attribute name="title">
+        <string>Mocap</string>
        </attribute>
       </widget>
      </widget>
@@ -174,6 +179,12 @@
    <class>QAlignTab</class>
    <extends>QWidget</extends>
    <header>ezposer/ui/tabs/qaligntab.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QMocapTab</class>
+   <extends>QWidget</extends>
+   <header>ezposer/ui/tabs/qmocaptab.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

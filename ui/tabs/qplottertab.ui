@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>centralWidget</class>
- <widget class="QWidget" name="centralWidget">
+ <class>QPlotterTab</class>
+ <widget class="QWidget" name="QPlotterTab">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -99,7 +99,7 @@
           </widget>
          </item>
          <item row="0" column="0">
-          <widget class="QPushButton" name="addGuidePushButton">
+          <widget class="QPushButton" name="createGuidePushButton">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -116,7 +116,7 @@
             <string>Creates a new guide from the active selection.</string>
            </property>
            <property name="text">
-            <string>Add</string>
+            <string>Create</string>
            </property>
           </widget>
          </item>
@@ -182,24 +182,6 @@
       <bool>false</bool>
      </property>
      <layout class="QVBoxLayout" name="settingsLayout">
-      <item>
-       <widget class="QWidget" name="intervalWidget" native="true">
-        <layout class="QHBoxLayout" name="horizontalLayout">
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-         <property name="bottomMargin">
-          <number>0</number>
-         </property>
-        </layout>
-       </widget>
-      </item>
       <item>
        <widget class="QWidget" name="animationRangeWidget" native="true">
         <property name="sizePolicy">
@@ -497,9 +479,6 @@
            <property name="checked">
             <bool>true</bool>
            </property>
-           <attribute name="buttonGroup">
-            <string notr="true">plotButtonGroup</string>
-           </attribute>
           </widget>
          </item>
          <item row="1" column="0">
@@ -522,9 +501,6 @@
            <property name="text">
             <string>Preserve Keys</string>
            </property>
-           <attribute name="buttonGroup">
-            <string notr="true">plotButtonGroup</string>
-           </attribute>
           </widget>
          </item>
          <item row="0" column="2">
@@ -658,13 +634,10 @@
            <property name="text">
             <string>Resample Keys</string>
            </property>
-           <attribute name="buttonGroup">
-            <string notr="true">plotButtonGroup</string>
-           </attribute>
           </widget>
          </item>
          <item row="2" column="0">
-          <widget class="QRadioButton" name="radioButton">
+          <widget class="QRadioButton" name="revertKeysRadioButton">
            <property name="toolTip">
             <string>Reassigns the original keyframe data.</string>
            </property>
@@ -790,7 +763,4 @@
    </hints>
   </connection>
  </connections>
- <buttongroups>
-  <buttongroup name="plotButtonGroup"/>
- </buttongroups>
 </ui>

@@ -14,6 +14,37 @@ class QAnimInputDialog(quicdialog.QUicDialog):
     Overload of `QUicDialog` that prompts users for animation related inputs.
     """
 
+    # region Dunderscores
+    def __init__(self, *args, **kwargs):
+        """
+        Private method called after a new instance has been created.
+
+        :key parent: QtWidgets.QWidget
+        :key f: QtCore.Qt.WindowFlags
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QAnimInputDialog, self).__init__(*args, **kwargs)
+
+        # Declare public variables
+        #
+        self.label = None
+        self.lineEdit = None
+        self.segmentWidget = None
+        self.segmentCheckBox = None
+        self.animationRangePushButton = None
+        self.objectRangePushButton = None
+        self.startTimeWidget = None
+        self.startTimeLabel = None
+        self.startTimeSpinBox = None
+        self.endTimeWidget = None
+        self.endTimeLabel = None
+        self.endTimeSpinBox = None
+        self.buttonBox = None
+    # endregion
+
     # region Methods
     def postLoad(self, *args, **kwargs):
         """

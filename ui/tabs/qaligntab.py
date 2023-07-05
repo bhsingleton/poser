@@ -2,7 +2,7 @@ import json
 
 from maya.api import OpenMaya as om
 from mpy import mpyfactory
-from Qt import QtCore, QtWidgets, QtGui
+from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.ui import qrollout, qdivider, qtimespinbox, qxyzwidget, qseparator
 from dcc.python import stringutils
 from dcc.maya.libs import dagutils
@@ -693,6 +693,27 @@ class QAlignTab(qabstracttab.QAbstractTab):
     Overload of `QAbstractTab` that aligns controls over a time duration.
     """
 
+    # region Dunderscores
+    def __init__(self, *args, **kwargs):
+        """
+        Private method called after a new instance has been created.
+
+        :key parent: QtWidgets.QWidget
+        :key flags: QtCore.Qt.WindowFlags
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(QAlignTab, self).__init__(*args, **kwargs)
+
+        # Declare public variables
+        #
+        self.alignPushButton = None
+        self.scrollArea = None
+        self.scrollAreaContents = None
+    # endregion
+
     # region Callback
     def sceneChanged(self):
         """
@@ -793,20 +814,27 @@ class QAlignTab(qabstracttab.QAbstractTab):
         # Iterate through layout items
         #
         layout = self.scrollAreaContents.layout()
+        numItems = layout.count()
 
-        for i in range(self.numAlignments()):
+        for i in range(numItems):
+
+            # Check if widget is still valid
+            #
+            widget = layout.itemAt(i).widget()
+
+            if not QtCompat.isValid(widget):
+
+                continue
 
             # Check if un-checked rollouts should be skipped
             #
-            alignment = layout.itemAt(i).widget()
-
-            if skipUnchecked and not alignment.isChecked():
+            if skipUnchecked and not widget.isChecked():
 
                 continue
 
             else:
 
-                yield alignment
+                yield widget
 
     def alignments(self, skipUnchecked=False):
         """
@@ -842,9 +870,15 @@ class QAlignTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for alignment in reversed(self.alignments()):
+        # Remove layout items in reverse
+        #
+        layout = self.scrollAreaContents.layout()
+        numItems = layout.count()
 
-            alignment.deleteLater()
+        for i in reversed(range(numItems)):
+
+            item = layout.takeAt(i)
+            item.widget().deleteLater()
 
     @undo(name='Align Transforms')
     def align(self):
