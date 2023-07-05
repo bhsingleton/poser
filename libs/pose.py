@@ -485,7 +485,7 @@ class Pose(psonobject.PSONObject):
 
                 pose.applyMatrix(node, **kwargs)
 
-    @animate
+    @animate(state=True)
     def bakeTransformationsTo(self, *nodes, **kwargs):
         """
         Bakes the transform values to the supplied nodes.
@@ -1145,7 +1145,7 @@ class PoseNode(psonobject.PSONObject):
 
         transformations = {}
 
-        if not skipTransformations and not skipKeys:
+        if not (skipTransformations and skipKeys):
 
             animationRange = kwargs.get('animationRange', None)
             step = kwargs.get('step', 1)
@@ -1335,14 +1335,16 @@ class PoseAttribute(psonobject.PSONObject):
         postInfinityType = 0
         keyframes = []
 
+        node = mpynode.MPyNode(plug.node())
+        animCurve = node.findAnimCurve(plug)
         skipKeys = kwargs.get('skipKeys', True)
 
-        if plugutils.isAnimated(plug) and not skipKeys:
+        if animCurve is not None and not skipKeys:
 
-            animCurve = mpynode.MPyNode(plug.source().node())
             preInfinityType = animCurve.preInfinity,
             postInfinityType = animCurve.postInfinity,
-            keyframes = animCurve.getKeys()
+            animationRange = kwargs.get('animationRange', None)
+            keyframes = animCurve.getKeys(animationRange=animationRange)
 
         # Return new pose attribute
         #

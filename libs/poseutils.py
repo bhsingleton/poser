@@ -1,5 +1,7 @@
-import json
+import re
 
+from dcc.json import jsonutils
+from dcc.python import stringutils
 from dcc.maya.json.mdataparser import MDataEncoder, MDataDecoder
 from .pose import Pose
 
@@ -7,6 +9,9 @@ import logging
 logging.basicConfig()
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
+
+
+__animation_range__ = re.compile(r'"animationRange"\s*:\s*\[\s*([0-9]+),\s*([0-9]+)\s*\]')
 
 
 def createPose(*nodes, **kwargs):
@@ -31,7 +36,7 @@ def dumpPose(pose):
     :rtype: str
     """
 
-    return json.dumps(pose, cls=MDataEncoder)
+    return jsonutils.dumps(pose, cls=MDataEncoder)
 
 
 def loadPose(string):
@@ -42,7 +47,7 @@ def loadPose(string):
     :rtype: Union[Pose, List[Pose]]
     """
 
-    return json.loads(string, cls=MDataDecoder)
+    return jsonutils.loads(string, cls=MDataDecoder)
 
 
 def exportPose(filePath, pose, **kwargs):
@@ -57,12 +62,8 @@ def exportPose(filePath, pose, **kwargs):
     :rtype: None
     """
 
-    # Open file and serialize pose
-    #
-    with open(filePath, 'w') as jsonFile:
-
-        log.info('Exporting pose to: %s' % filePath)
-        json.dump(pose, jsonFile, cls=MDataEncoder, indent=4)
+    log.info('Exporting pose to: %s' % filePath)
+    jsonutils.dump(filePath, pose, cls=MDataEncoder, indent=4)
 
 
 def exportPoseFromNodes(filePath, nodes, **kwargs):
@@ -89,8 +90,42 @@ def importPose(filePath):
     :rtype: pose.Pose
     """
 
-    # Open file and deserialize data
+    log.debug('Importing pose from: %s' % filePath)
+    return jsonutils.load(filePath, cls=MDataDecoder)
+
+
+def importPoseRange(filePath):
+    """
+    Returns the animation-range from the supplied pose.
+
+    :type filePath: str
+    :rtype: Union[Tuple[int, int], None]
+    """
+
+    # Read pose file
     #
+    string = None
+
     with open(filePath, 'r') as jsonFile:
 
-        return json.load(jsonFile, cls=MDataDecoder)
+        string = ''.join(jsonFile.readlines())
+
+    # Find all animation-range keys
+    #
+    groups = __animation_range__.findall(string)
+
+    if len(groups) != 1:
+
+        return None
+
+    # Check if group is valid
+    #
+    startTime, endTime = groups[0]
+
+    if not (stringutils.isNullOrEmpty(startTime) or stringutils.isNullOrEmpty(endTime)):
+
+        return int(startTime), int(endTime)
+
+    else:
+
+        return None
