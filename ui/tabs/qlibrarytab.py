@@ -53,6 +53,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.applyPosePushButton = None
         self.applyPoseSlider = None
         self.applyRelativePosePushButton = None
+        self.applyAnimActionGroup = None
         self.fileListView = None
         self.pathLineEdit = None
 
@@ -103,22 +104,15 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.relativeTargetAction = None
         self.pickRelativeTargetAction = None
 
-        self.mirrorMenu = None
         self.mirrorStartTimeWidget = None
-        self.mirrorStartTimeLayout = None
         self.mirrorStartTimeCheckBox = None
         self.mirrorStartTimeSpinBox = None
-        self.mirrorStartTimeAction = None
         self.mirrorEndTimeWidget = None
-        self.mirrorEndTimeLayout = None
         self.mirrorEndTimeCheckBox = None
         self.mirrorEndTimeSpinBox = None
-        self.mirrorEndTimeAction = None
         self.mirrorTimeWidget = None
-        self.mirrorTimeLayout = None
         self.mirrorTimeCheckBox = None
         self.mirrorTimeSpinBox = None
-        self.mirrorTimeAction = None
     # endregion
 
     # region Methods
@@ -164,7 +158,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.fileListView.setModel(self.fileItemFilterModel)
         self.fileListView.selectionModel().selectionChanged.connect(self.on_fileListView_selectionChanged)
 
-        # Initialize create pose menu
+        # Add "Create" menu actions
         #
         self.selectControlsAction = QtWidgets.QAction('Select Controls')
         self.selectControlsAction.setObjectName('selectControlsAction')
@@ -192,7 +186,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.createPoseMenu.addSeparator()
         self.createPoseMenu.addActions([self.addFolderAction, self.addPoseAction, self.addAnimationAction])
 
-        # Initialize edit pose menu
+        # Add "Edit" menu actions
         #
         self.selectAssociatedNodesAction = QtWidgets.QAction('Select Associated Nodes')
         self.selectAssociatedNodesAction.setObjectName('selectAssociatedNodesAction')
@@ -222,7 +216,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.editPoseMenu.addSeparator()
         self.editPoseMenu.addAction(self.openInExplorerAction)
 
-        # Initialize apply pose menu
+        # Add "Apply" menu actions
         #
         self.applyPoseMenu = QtWidgets.QMenu(parent=self.applyPosePushButton)
         self.applyPoseMenu.setObjectName('applyPoseMenu')
@@ -259,7 +253,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.applyPoseMenu.addActions([self.replaceAnimAction, self.insertAnimAction, self.insertTimeAction])
         self.applyPosePushButton.setMenu(self.applyPoseMenu)
 
-        # Initialize apply relative pose menu
+        # Add "Apply Relative" menu actions
         #
         self.applyRelativePoseMenu = QtWidgets.QMenu(parent=self.applyRelativePosePushButton)
         self.applyRelativePoseMenu.setObjectName('applyRelativePoseMenu')
@@ -284,111 +278,16 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.matchButtonGroup.addButton(self.matchRotateCheckBox, id=1)
         self.matchButtonGroup.addButton(self.matchScaleCheckBox, id=2)
 
-        # Initialize mirror start time widget
+        # Edit time-range spin boxes
         #
-        self.mirrorMenu = QtWidgets.QMenu(parent=self)
-        self.mirrorMenu.setObjectName('mirrorMenu')
-
-        self.mirrorStartTimeLayout = QtWidgets.QHBoxLayout()
-        self.mirrorStartTimeLayout.setContentsMargins(4, 0, 0, 0)
-        self.mirrorStartTimeLayout.setSpacing(4)
-
-        self.mirrorStartTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
-        self.mirrorStartTimeWidget.setObjectName('mirrorStartTimeWidget')
-        self.mirrorStartTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.mirrorStartTimeWidget.setFixedHeight(20)
-        self.mirrorStartTimeWidget.setLayout(self.mirrorStartTimeLayout)
-
-        self.mirrorStartTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.mirrorStartTimeWidget)
-        self.mirrorStartTimeSpinBox.setObjectName('mirrorStartTimeSpinBox')
-        self.mirrorStartTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.mirrorStartTimeSpinBox.setDefaultType(self.mirrorStartTimeSpinBox.DefaultType.StartTime)
-        self.mirrorStartTimeSpinBox.setRange(-9999, 9999)
+        self.mirrorStartTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.StartTime)
         self.mirrorStartTimeSpinBox.setValue(self.scene.startTime)
-        self.mirrorStartTimeSpinBox.setPrefix('Start: ')
-        self.mirrorStartTimeSpinBox.setEnabled(False)
 
-        self.mirrorStartTimeCheckBox = QtWidgets.QCheckBox('', parent=self.mirrorStartTimeWidget)
-        self.mirrorStartTimeCheckBox.setObjectName('startTimeCheckBox')
-        self.mirrorStartTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.mirrorStartTimeCheckBox.toggled.connect(self.mirrorStartTimeSpinBox.setEnabled)
-
-        self.mirrorStartTimeLayout.addWidget(self.mirrorStartTimeCheckBox)
-        self.mirrorStartTimeLayout.addWidget(self.mirrorStartTimeSpinBox)
-
-        self.mirrorStartTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
-        self.mirrorStartTimeAction.setDefaultWidget(self.mirrorStartTimeWidget)
-
-        # Initialize mirror end time widget
-        #
-        self.mirrorEndTimeLayout = QtWidgets.QHBoxLayout()
-        self.mirrorEndTimeLayout.setContentsMargins(4, 0, 0, 0)
-        self.mirrorEndTimeLayout.setSpacing(4)
-
-        self.mirrorEndTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
-        self.mirrorEndTimeWidget.setObjectName('mirrorEndTimeWidget')
-        self.mirrorEndTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.mirrorEndTimeWidget.setFixedHeight(20)
-        self.mirrorEndTimeWidget.setLayout(self.mirrorEndTimeLayout)
-
-        self.mirrorEndTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.mirrorEndTimeWidget)
-        self.mirrorEndTimeSpinBox.setObjectName('mirrorEndTimeSpinBox')
-        self.mirrorEndTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.mirrorEndTimeSpinBox.setDefaultType(self.mirrorEndTimeSpinBox.DefaultType.EndTime)
-        self.mirrorEndTimeSpinBox.setRange(-9999, 9999)
+        self.mirrorEndTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.EndTime)
         self.mirrorEndTimeSpinBox.setValue(self.scene.endTime)
-        self.mirrorEndTimeSpinBox.setPrefix('End: ')
-        self.mirrorEndTimeSpinBox.setEnabled(False)
 
-        self.mirrorEndTimeCheckBox = QtWidgets.QCheckBox('', parent=self.mirrorEndTimeWidget)
-        self.mirrorEndTimeCheckBox.setObjectName('mirrorEndTimeCheckBox')
-        self.mirrorEndTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.mirrorEndTimeCheckBox.toggled.connect(self.mirrorEndTimeSpinBox.setEnabled)
-
-        self.mirrorEndTimeLayout.addWidget(self.mirrorEndTimeCheckBox)
-        self.mirrorEndTimeLayout.addWidget(self.mirrorEndTimeSpinBox)
-
-        self.mirrorEndTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
-        self.mirrorEndTimeAction.setDefaultWidget(self.mirrorEndTimeWidget)
-
-        # Initialize mirror time widget
-        #
-        self.mirrorTimeLayout = QtWidgets.QHBoxLayout()
-        self.mirrorTimeLayout.setContentsMargins(4, 0, 0, 0)
-        self.mirrorTimeLayout.setSpacing(4)
-
-        self.mirrorTimeWidget = QtWidgets.QWidget(parent=self.mirrorMenu)
-        self.mirrorTimeWidget.setObjectName('mirrorTimeWidget')
-        self.mirrorTimeWidget.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        self.mirrorTimeWidget.setFixedHeight(20)
-        self.mirrorTimeWidget.setLayout(self.mirrorTimeLayout)
-
-        self.mirrorTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.mirrorTimeWidget)
-        self.mirrorTimeSpinBox.setObjectName('mirrorTimeSpinBox')
-        self.mirrorTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.mirrorTimeSpinBox.setDefaultType(self.mirrorTimeSpinBox.DefaultType.CurrentTime)
-        self.mirrorTimeSpinBox.setRange(-9999, 9999)
-        self.mirrorTimeSpinBox.setValue(self.scene.startTime)
-        self.mirrorTimeSpinBox.setPrefix('Insert At: ')
-        self.mirrorTimeSpinBox.setEnabled(False)
-
-        self.mirrorTimeCheckBox = QtWidgets.QCheckBox('', parent=self.mirrorTimeWidget)
-        self.mirrorTimeCheckBox.setObjectName('mirrorTimeCheckBox')
-        self.mirrorTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
-        self.mirrorTimeCheckBox.toggled.connect(self.mirrorTimeSpinBox.setEnabled)
-
-        self.mirrorTimeLayout.addWidget(self.mirrorTimeCheckBox)
-        self.mirrorTimeLayout.addWidget(self.mirrorTimeSpinBox)
-
-        self.mirrorTimeAction = QtWidgets.QWidgetAction(self.mirrorMenu)
-        self.mirrorTimeAction.setDefaultWidget(self.mirrorTimeWidget)
-
-        # Initialize mirror menus
-        #
-        self.mirrorMenu.addActions([self.mirrorStartTimeAction, self.mirrorEndTimeAction, self.mirrorTimeAction])
-
-        self.mirrorAnimationPushButton.setMenu(self.mirrorMenu)
-        self.pullAnimationPushButton.setMenu(self.mirrorMenu)
+        self.mirrorInsertTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.CurrentTime)
+        self.mirrorInsertTimeSpinBox.setValue(self.scene.startTime)
 
     def loadSettings(self, settings):
         """
@@ -547,59 +446,9 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         startTime = self.mirrorStartTimeSpinBox.value() if self.mirrorStartTimeCheckBox.isChecked() else self.scene.startTime
         endTime = self.mirrorEndTimeSpinBox.value() if self.mirrorEndTimeCheckBox.isChecked() else self.scene.endTime
-        insertTime = self.mirrorTimeSpinBox.value() if self.mirrorTimeCheckBox.isChecked() else startTime
+        insertTime = self.mirrorInsertTimeSpinBox.value() if self.mirrorInsertTimeCheckBox.isChecked() else startTime
 
         return startTime, endTime, insertTime
-
-    def getSortPriority(self, node):
-        """
-        Returns the sort priority index for the supplied node.
-
-        :type node: mpynode.MPyNode
-        :rtype: int
-        """
-
-        priorities = self.controllerPriorities()
-        lastIndex = len(priorities)
-
-        matches = [i for (i, pattern) in enumerate(priorities) if fnmatchcase(node.name(), pattern)]
-        numMatches = len(matches)
-
-        if numMatches > 0:
-
-            return matches[0]  # Use the first known match!
-
-        else:
-
-            return lastIndex  # Send to end of list...
-
-    def getSelection(self, sort=False):
-        """
-        Returns the active selection.
-        If no nodes are selected then the controller patterns are queried instead!
-
-        :type sort: bool
-        :rtype: List[mpynode.MPyNode]
-        """
-
-        # Evaluate active selection
-        #
-        selection = self.scene.selection(apiType=om.MFn.kTransform)
-        selectionCount = len(selection)
-
-        if selectionCount == 0:
-
-            selection = self.getControls()
-
-        # Check if selection requires sorting
-        #
-        if sort:
-
-            return sorted(selection, key=self.getSortPriority)
-
-        else:
-
-            return selection
 
     def getRelativeTarget(self):
         """
@@ -617,61 +466,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         else:
 
             return None
-
-    def iterControls(self, visible=False):
-        """
-        Returns a generator that yields controls from the scene.
-
-        :type visible: bool
-        :rtype: Iterator[mpynode.MPyNode]
-        """
-
-        # Iterate through nodes
-        #
-        currentNamespace = self.currentNamespace()
-        namespace = '*' if stringutils.isNullOrEmpty(currentNamespace) else currentNamespace
-
-        patterns = [f'{namespace}:{pattern}' for pattern in self.controllerPatterns()]
-
-        for node in self.scene.iterNodesByPattern(*patterns, apiType=om.MFn.kTransform):
-
-            # Check if this is a constraint
-            #
-            if any(map(node.hasFn, (om.MFn.kConstraint, om.MFn.kPluginConstraintNode))):
-
-                continue
-
-            # Check if invisible nodes should be skipped
-            #
-            if visible and not node.dagPath().isVisible():
-
-                continue
-
-            # Yield controller
-            #
-            yield node
-
-    def getControls(self, visible=False):
-        """
-        Returns a list of controls from the scene.
-
-        :type visible: bool
-        :rtype: Iterator[mpynode.MPyNode]
-        """
-
-        return list(self.iterControls(visible=visible))
-
-    @undo(state=False)
-    def selectControls(self, visible=False):
-        """
-        Selects any controls that match the active controller patterns.
-
-        :type visible: bool
-        :rtype: None
-        """
-
-        nodes = [node.object() for node in self.iterControls(visible=visible)]
-        self.scene.setSelection(nodes)
 
     @undo(state=False)
     def addFolder(self):
