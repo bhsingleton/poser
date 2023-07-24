@@ -311,6 +311,33 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         self.startTimeSpinBox.setValue(startTime)
         self.endTimeSpinBox.setValue(endTime)
 
+    def isNameUnique(self, name):
+        """
+        Evaluates if the supplied guide name is unique.
+
+        :type name: str
+        :rtype: bool
+        """
+
+        return not any([guide.name == name for guide in self._guides])
+
+    def createUniqueName(self):
+        """
+        Returns a unique guide name.
+
+        :rtype: str
+        """
+
+        name = 'AnimGuide01'
+        index = 1
+
+        while not self.isNameUnique(name):
+
+            index += 1
+            name = 'AnimGuide{index}'.format(index=str(index).zfill(2))
+
+        return name
+
     def getSelectedIndex(self, topLevel=False):
         """
         Returns the active selection index.
@@ -470,7 +497,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
     # region Slots
     @QtCore.Slot()
-    def on_nameLineEdit_editingFinished(self):
+    def on_nameLineEdit_returnPressed(self):
         """
         Slot method for the nameLineEdit's `editingFinished` signal.
 
@@ -478,11 +505,14 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         """
 
         guide = self.getSelectedGuide()
-
+        sender = self.sender()
+        
         if guide is not None:
 
             guide.name = self.nameLineEdit.text()
             self.synchronize()
+
+        sender.clearFocus()
 
     @QtCore.Slot(bool)
     def on_selectGuideAction_triggered(self, checked=False):
@@ -570,9 +600,20 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
+        # Check if a custom name was entered
+        #
+        name = self.nameLineEdit.text()
+
+        if not self.isNameUnique(name) or stringutils.isNullOrEmpty(name):
+
+            name = self.createUniqueName()
+
+        # Create new pose and synchronize
+        #
         pose = poseutils.createPose(
             *self.scene.selection(),
-            animationRange=self.animationRange(),
+            name=name,
+            animationRange=self.scene.animationRange,
             skipKeys=False,
             skipTransformations=False
         )
