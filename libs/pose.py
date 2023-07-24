@@ -318,13 +318,13 @@ class Pose(psonobject.PSONObject):
 
         # Iterate through nodes
         #
-        namespace = kwargs.get('namespace', '')
-
         for node in nodes:
 
             # Check if pose exists
             #
             name = node.name()
+            namespace = node.namespace()
+
             pose = self.getPoseByName(name, namespace=namespace)
 
             if pose is not None:
@@ -1118,7 +1118,8 @@ class PoseNode(psonobject.PSONObject):
             mirrorFlag = 'mirror{name}'.format(name=stringutils.titleize(attribute.name))
             mirrorEnabled = node.userProperties.get(mirrorFlag, False)
 
-            keyframes = attribute.invertKeyframes() if mirrorEnabled else list(attribute.keyframes)
+            startTime, endTime = animationRange
+            keyframes = attribute.getRange(startTime, endTime, invert=mirrorEnabled)
 
             # Apply keyframes to animation curve
             #
@@ -1311,14 +1312,25 @@ class PoseAttribute(psonobject.PSONObject):
     # endregion
 
     # region Methods
-    def invertKeyframes(self):
+    def getRange(self, startTime, endTime, invert=False):
         """
-        Inverts the keyframes from this attribute.
+        Returns a range of keys from this attribute.
 
+        :type startTime: int
+        :type endTime: int
+        :type invert: bool
         :rtype: List[keyframe.Keyframe]
         """
 
-        return list(map(neg, self.keyframes))
+        keyframes = [key for key in self.keyframes if startTime <= key.time <= endTime]
+
+        if invert:
+
+            return list(map(neg, keyframes))
+
+        else:
+
+            return keyframes
 
     @classmethod
     def create(cls, plug, **kwargs):
