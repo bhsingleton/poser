@@ -91,6 +91,27 @@ class QAbstractTab(quicwidget.QUicWidget):
 
         return self.window().controllerPatterns()
 
+    def getSortPriority(self, node):
+        """
+        Returns the sort priority index for the supplied node.
+
+        :type node: mpynode.MPyNode
+        :rtype: int
+        """
+
+        return self.window().getSortPriority(node)
+
+    def getSelection(self, sort=False):
+        """
+        Returns the active selection.
+        If no nodes are selected then the controller patterns are queried instead!
+
+        :type sort: bool
+        :rtype: List[mpynode.MPyNode]
+        """
+
+        return self.window().getSelection(sort=sort)
+
     def controllerPriorities(self):
         """
         Returns the controller priorities for setting poses.
@@ -99,4 +120,34 @@ class QAbstractTab(quicwidget.QUicWidget):
         """
 
         return self.window().controllerPriorities()
+
+    def iterControls(self, visible=False):
+        """
+        Returns a generator that yields controls from the scene.
+
+        :type visible: bool
+        :rtype: Iterator[mpynode.MPyNode]
+        """
+
+        return self.window().iterControls(visible=visible)
+
+    def getControls(self, visible=False):
+        """
+        Returns a list of controls from the scene.
+
+        :type visible: bool
+        :rtype: Iterator[mpynode.MPyNode]
+        """
+
+        return self.window().getControls(visible=visible)
+
+    def selectControls(self, visible=False):
+        """
+        Selects any controls that match the active controller patterns.
+
+        :type visible: bool
+        :rtype: None
+        """
+
+        self.window().selectControls(visible=visible)
     # endregion
