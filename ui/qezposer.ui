@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>500</height>
+    <width>352</width>
+    <height>556</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -42,7 +42,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>3</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideLeft</enum>
@@ -65,6 +65,11 @@
         <string>Align</string>
        </attribute>
       </widget>
+      <widget class="QLoopTab" name="loopTab">
+       <attribute name="title">
+        <string>Loop</string>
+       </attribute>
+      </widget>
       <widget class="QMocapTab" name="mocapTab">
        <attribute name="title">
         <string>Mocap</string>
@@ -79,7 +84,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>300</width>
+     <width>352</width>
      <height>21</height>
     </rect>
    </property>
@@ -87,23 +92,16 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="setProjectFolderAction"/>
    </widget>
    <widget class="QMenu" name="helpMenu">
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="usingEzPoserAction"/>
    </widget>
    <widget class="QMenu" name="settingsMenu">
     <property name="title">
      <string>Settings</string>
     </property>
-    <addaction name="usePoseNamespaceAction"/>
-    <addaction name="useCustomNamespaceAction"/>
-    <addaction name="changeNamespaceAction"/>
-    <addaction name="separator"/>
-    <addaction name="changeRigConfigurationAction"/>
    </widget>
    <addaction name="fileMenu"/>
    <addaction name="settingsMenu"/>
@@ -129,34 +127,23 @@
     <string>Change Rig Configuration</string>
    </property>
   </action>
-  <action name="changeNamespaceAction">
+  <action name="defaultNamespaceAction">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Change Namespace</string>
+    <string>:</string>
+   </property>
+  </action>
+  <action name="namespaceSeparator">
+   <property name="text">
+    <string>Separator</string>
    </property>
   </action>
   <actiongroup name="namespaceActionGroup">
-   <action name="usePoseNamespaceAction">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>true</bool>
-    </property>
-    <property name="text">
-     <string>Use Pose Namespace</string>
-    </property>
-   </action>
-   <action name="useCustomNamespaceAction">
-    <property name="checkable">
-     <bool>true</bool>
-    </property>
-    <property name="checked">
-     <bool>false</bool>
-    </property>
-    <property name="text">
-     <string>Use Custom Namespace</string>
-    </property>
-   </action>
    <property name="exclusive" stdset="0">
     <bool>true</bool>
    </property>
@@ -185,6 +172,12 @@
    <class>QMocapTab</class>
    <extends>QWidget</extends>
    <header>ezposer/ui/tabs/qmocaptab.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QLoopTab</class>
+   <extends>QWidget</extends>
+   <header>ezposer/ui/tabs/qlooptab.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
