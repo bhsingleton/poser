@@ -1,0 +1,9 @@
+<RCC>
+  <qresource prefix="ezposer">
+    <file>icons/ort_constant.png</file>
+    <file>icons/ort_cycle.png</file>
+    <file>icons/ort_cycle_offset.png</file>
+    <file>icons/ort_linear.png</file>
+    <file>icons/ort_oscilate.png</file>
+  </qresource>
+</RCC>

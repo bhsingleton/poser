@@ -11,6 +11,7 @@ from dcc.ui import quicwindow
 from dcc.decorators.staticinitializer import staticInitializer
 from dcc.decorators.classproperty import classproperty
 from dcc.maya.decorators.undo import undo
+from . import resources
 from ..libs import rigutils
 from ..libs import rigconfiguration
 
@@ -22,7 +23,7 @@ log.setLevel(logging.INFO)
 
 def onSceneChanged(*args, **kwargs):
     """
-    Callback method after a scene IO operation has occurred.
+    Callback method for any scene IO changes.
 
     :rtype: None
     """
