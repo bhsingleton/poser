@@ -415,6 +415,7 @@ class QMocapTab(qabstracttab.QAbstractTab):
         # Update source path line-edit
         #
         self.sourcePathLineEdit.setText(source.filePath())
+        self.invalidateSource()
 
     @QtCore.Slot(bool)
     def on_unloadSourcePushButton_clicked(self, checked=False):
@@ -571,7 +572,7 @@ class QMocapTab(qabstracttab.QAbstractTab):
         directory = QtWidgets.QFileDialog.getExistingDirectory(
             self,
             'Select directory to export to',
-            self.scene.currentDirectory(),
+            self.scene.directory,
             QtWidgets.QFileDialog.ShowDirsOnly | QtWidgets.QFileDialog.DontResolveSymlinks
         )
 
@@ -634,6 +635,7 @@ class QMocapTab(qabstracttab.QAbstractTab):
             sceneutils.newScene()
             self.scene.createReference(sourcePath, namespace=self.__namespace__)
             self.scene.createReference(targetPath, namespace='X')
+            sceneutils.frameVisible(all=True)
 
             self.invalidateSource()
             self.invalidateTargets()
