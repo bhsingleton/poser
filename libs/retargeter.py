@@ -169,6 +169,14 @@ class RetargetBinder(psonobject.PSONObject):
 
         self._source.clear()
         self._source.extend(source)
+
+        sourceCount = len(self._source)
+        offsetCount = len(self._offsets)
+
+        if sourceCount != offsetCount:
+
+            self._offsets.clear()
+            self._offsets.extend([om.MMatrix.kIdentity] * sourceCount)
         
     @property
     def target(self):
@@ -191,7 +199,15 @@ class RetargetBinder(psonobject.PSONObject):
 
         self._target.clear()
         self._target.extend(target)
-    
+
+        targetCount = len(self._target)
+        offsetCount = len(self._offsets)
+
+        if targetCount != offsetCount:
+
+            self._offsets.clear()
+            self._offsets.extend([om.MMatrix.kIdentity] * targetCount)
+
     @property
     def fkControls(self):
         """
