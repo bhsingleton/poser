@@ -107,7 +107,23 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
+        # Load anim-guides from file properties
+        #
         self.guides = poseutils.loadPose(self.scene.properties.get('animGuides', default='[]'))
+
+        # Invalidate animation-range
+        #
+        startTimeEnabled = self.startTimeCheckBox.isChecked()
+
+        if not startTimeEnabled:
+
+            self.startTimeSpinBox.setValue(self.scene.startTime)
+
+        endTimeEnabled = self.endTimeCheckBox.isChecked()
+
+        if not endTimeEnabled:
+
+            self.endTimeSpinBox.setValue(self.scene.endTime)
     # endregion
 
     # region Methods
@@ -179,9 +195,25 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         # Load user preferences
         #
         self.setPlotOption(int(settings.value('tabs/plotter/plotOption', defaultValue=0)))
-        self.setSnapKeys(bool(settings.value('editor/snapKeys', defaultValue=0)))
-        self.setStep(int(settings.value('editor/step', defaultValue=1)))
-        self.setStepEnabled(bool(settings.value('editor/stepEnabled', defaultValue=1)))
+        self.setSnapKeys(bool(settings.value('tabs/plotter/snapKeys', defaultValue=0)))
+        self.setStep(int(settings.value('tabs/plotter/step', defaultValue=1)))
+        self.setStepEnabled(bool(settings.value('tabs/plotter/stepEnabled', defaultValue=1)))
+
+        startTimeEnabled = bool(settings.value('tabs/plotter/startTimeEnabled', defaultValue=0))
+        self.startTimeCheckBox.setChecked(startTimeEnabled)
+
+        if startTimeEnabled:
+
+            startTime = int(settings.value('tabs/plotter/startTime', defaultValue=self.scene.startTime))
+            self.startTimeSpinBox.setValue(startTime)
+
+        endTimeEnabled = bool(settings.value('tabs/plotter/endTimeEnabled', defaultValue=0))
+        self.endTimeCheckBox.setChecked(endTimeEnabled)
+
+        if endTimeEnabled:
+
+            endTime = int(settings.value('tabs/plotter/endTime', defaultValue=self.scene.endTime))
+            self.endTimeSpinBox.setValue(endTime)
 
         # Invalidate internal guides
         #
@@ -205,6 +237,14 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         settings.setValue('tabs/plotter/snapKeys', int(self.snapKeys()))
         settings.setValue('tabs/plotter/step', int(self.step()))
         settings.setValue('tabs/plotter/stepEnabled', int(self.stepEnabled()))
+
+        startTime, startTimeEnabled = self.startTimeSpinBox.value(), self.startTimeCheckBox.isChecked()
+        settings.setValue('tabs/plotter/startTime', int(startTime))
+        settings.setValue('tabs/plotter/startTimeEnabled', int(startTimeEnabled))
+
+        endTime, endTimeEnabled = self.endTimeSpinBox.value(), self.endTimeCheckBox.isChecked()
+        settings.setValue('tabs/plotter/endTime', int(endTime))
+        settings.setValue('tabs/plotter/endTimeEnabled', int(endTimeEnabled))
 
         # Save animation guides to scene properties
         #
