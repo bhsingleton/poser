@@ -2,10 +2,11 @@ from maya.api import OpenMaya as om
 from mpy import mpynode, mpyfactory
 from copy import copy, deepcopy
 from operator import neg
+from itertools import chain
 from dcc.json import psonobject
 from dcc.python import stringutils
 from dcc.dataclasses import keyframe
-from dcc.collections import notifylist
+from dcc.collections import notifylist, notifydict
 from dcc.generators.inclusiverange import inclusiveRange
 from dcc.maya.libs import plugutils, plugmutators, transformutils
 from dcc.maya.decorators.animate import animate
@@ -336,21 +337,6 @@ class Pose(psonobject.PSONObject):
                 log.warning(f'Cannot find pose for "{name}" node!')
                 continue
 
-    def getKeyframeInputs(self):
-        """
-        Returns the keyframe inputs from this pose.
-
-        :rtype: List[int]
-        """
-
-        inputs = set()
-
-        for node in self.nodes:
-
-            inputs.update(set(node.getKeyframeInputs()))
-
-        return list(inputs)
-
     def blendPose(self, otherPose, weight=0.0):
         """
         Blends this pose with the other pose.
@@ -499,38 +485,36 @@ class Pose(psonobject.PSONObject):
         :rtype: None
         """
 
-        # Check if keys should be preserved
+        # Get node-input pairs
+        #
+        preserveKeys = kwargs.get('preserveKeys', False)
+        pairs = [(node, pose, dict.fromkeys(pose.getKeyframeInputs(), True)) for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs)]
+
+        times = dict.fromkeys(set(list(chain(*[inputs for (node, pose, inputs) in pairs]))), True)
+
+        # Iterate through bake-range
         #
         animationRange = kwargs.get('animationRange', self.animationRange)
         startTime, endTime = animationRange
-        preserveKeys = kwargs.get('preserveKeys', False)
+        step = kwargs.get('step', 1)
 
-        times = None
-
-        if preserveKeys:
-
-            # Get keyframe inputs
-            #
-            times = [time for time in self.getKeyframeInputs() if startTime <= time <= endTime]
-
-        else:
-
-            # Get animation range
-            #
-            step = kwargs.get('step', 1)
-            times = list(inclusiveRange(startTime, endTime, step))
-
-        # Iterate through time inputs
-        #
-        for (i, time) in enumerate(times):
+        for (i, time) in enumerate(inclusiveRange(startTime, endTime, step)):
 
             # Go to time
             #
-            self.scene.time = time
+            hasTime = times.get(time, False)
+
+            if (preserveKeys and hasTime) or not preserveKeys:
+
+                self.scene.time = time
+
+            else:
+
+                continue
 
             # Iterate through nodes
             #
-            for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+            for (node, pose, inputs) in pairs:
 
                 # Check if keys should be cleared
                 #
@@ -540,10 +524,18 @@ class Pose(psonobject.PSONObject):
 
                 # Apply transform at time
                 #
-                worldMatrix = pose.getTransformation(time)
-                matrix = worldMatrix * node.parentInverseMatrix()
+                hasInput = inputs.get(time, False)
 
-                node.setMatrix(matrix, skipScale=True)
+                if (preserveKeys and hasInput) or not preserveKeys:
+
+                    worldMatrix = pose.getTransformation(time)
+                    matrix = worldMatrix * node.parentInverseMatrix()
+
+                    node.setMatrix(matrix, skipScale=True)
+
+                else:
+
+                    continue
 
     def applyAnimationRange(self):
         """
@@ -1004,6 +996,7 @@ class PoseNode(psonobject.PSONObject):
             # Apply keyframes to animation curve
             #
             animCurve = node.findAnimCurve(plug, create=True)
+            animCurve.setIsWeighted(attribute.weighted)
 
             if insertAt is not None:
 
@@ -1180,6 +1173,7 @@ class PoseAttribute(psonobject.PSONObject):
         '_value',
         '_preInfinityType',
         '_postInfinityType',
+        '_weighted',
         '_keyframes'
     )
 
@@ -1196,6 +1190,7 @@ class PoseAttribute(psonobject.PSONObject):
         self._value = kwargs.get('value', 0.0)
         self._preInfinityType = kwargs.get('preInfinityType', 0)
         self._postInfinityType = kwargs.get('postInfinityType', 0)
+        self._weighted = kwargs.get('weighted', False)
         self._keyframes = kwargs.get('keyframes', [])
 
         # Call parent method
@@ -1345,6 +1340,7 @@ class PoseAttribute(psonobject.PSONObject):
         #
         preInfinityType = 0
         postInfinityType = 0
+        weighted = False
         keyframes = []
 
         node = mpynode.MPyNode(plug.node())
@@ -1353,8 +1349,9 @@ class PoseAttribute(psonobject.PSONObject):
 
         if animCurve is not None and not skipKeys:
 
-            preInfinityType = animCurve.preInfinity,
-            postInfinityType = animCurve.postInfinity,
+            preInfinityType = animCurve.preInfinity
+            postInfinityType = animCurve.postInfinity
+            weighted = animCurve.isWeighted
             animationRange = kwargs.get('animationRange', None)
             keyframes = animCurve.getKeys(animationRange=animationRange)
 
@@ -1365,6 +1362,7 @@ class PoseAttribute(psonobject.PSONObject):
             value=plugmutators.getValue(plug),
             preInfinityType=preInfinityType,
             postInfinityType=postInfinityType,
+            weighted=weighted,
             keyframes=keyframes
         )
     # endregion
@@ -1406,7 +1404,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         self._name = kwargs.get('name', '')
         self._parent = kwargs.get('parent', self.nullWeakReference)
         self._children = notifylist.NotifyList()
-        self._members = notifylist.NotifyList()
+        self._members = notifydict.NotifyDict()
         self._mute = kwargs.get('mute', False)
         self._solo = kwargs.get('solo', False)
         self._lock = kwargs.get('lock', False)
@@ -1473,7 +1471,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         :rtype: List[PoseAnimLayer]
         """
 
-        return self._name
+        return self._children
 
     @children.setter
     def children(self, children):
@@ -1486,6 +1484,28 @@ class PoseAnimLayer(psonobject.PSONObject):
 
         self._children.clear()
         self._children.extend(children)
+
+    @property
+    def members(self):
+        """
+        Getter method that returns the members from this layer.
+
+        :rtype: List[PoseAnimLayer]
+        """
+
+        return self._members
+
+    @members.setter
+    def members(self, members):
+        """
+        Setter method that updates the members for this layer.
+
+        :type members: Dict[str, List[PoseAttribute]]
+        :rtype: None
+        """
+
+        self._members.clear()
+        self._members.update(members)
 
     @property
     def mute(self):
@@ -1720,11 +1740,11 @@ class PoseAnimLayer(psonobject.PSONObject):
 
         layer._parent = self.nullWeakReference
 
-    def memberAdded(self, index, member):
+    def memberAdded(self, key, member):
         """
         Node added callback.
 
-        :type index: int
+        :type key: Union[int, str]
         :type member: PoseMember
         :rtype: None
         """
