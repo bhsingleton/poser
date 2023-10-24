@@ -1,5 +1,5 @@
 from maya.api import OpenMaya as om
-from mpy import mpynode, mpyfactory
+from mpy import mpyscene, mpynode
 from copy import copy, deepcopy
 from operator import neg
 from itertools import chain
@@ -43,7 +43,7 @@ class Pose(psonobject.PSONObject):
 
         # Declare private variables
         #
-        self._scene = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
+        self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
         self._name = kwargs.get('name', self.scene.name)
         self._filePath = kwargs.get('filePath', self.scene.filePath)
         self._animationRange = kwargs.get('animationRange', self.scene.animationRange)
@@ -72,7 +72,7 @@ class Pose(psonobject.PSONObject):
         """
         Getter method that returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self._scene()
@@ -485,12 +485,18 @@ class Pose(psonobject.PSONObject):
         :rtype: None
         """
 
-        # Get node-input pairs
+        # Collect node-input pairs
         #
         preserveKeys = kwargs.get('preserveKeys', False)
-        pairs = [(node, pose, dict.fromkeys(pose.getKeyframeInputs(), True)) for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs)]
+        pairs = []
 
-        times = dict.fromkeys(set(list(chain(*[inputs for (node, pose, inputs) in pairs]))), True)
+        for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+
+            animCurves = [node.findAnimCurve(plug) for plug in node.iterPlugs(channelBox=True, skipUserAttributes=True)]
+            inputs = dict.fromkeys(chain(*[animCurve.inputs() for animCurve in animCurves if animCurve is not None]), True)
+            pairs.append((node, pose, inputs))
+
+        times = dict(chain(*[inputs.items() for (node, pose, inputs) in pairs]))
 
         # Iterate through bake-range
         #
@@ -498,9 +504,13 @@ class Pose(psonobject.PSONObject):
         startTime, endTime = animationRange
         step = kwargs.get('step', 1)
 
+        skipTranslate = kwargs.get('skipTranslate', False)
+        skipRotate = kwargs.get('skipRotate', False)
+        skipScale = kwargs.get('skipScale', True)
+
         for (i, time) in enumerate(inclusiveRange(startTime, endTime, step)):
 
-            # Go to time
+            # Go to next frame
             #
             hasTime = times.get(time, False)
 
@@ -531,7 +541,7 @@ class Pose(psonobject.PSONObject):
                     worldMatrix = pose.getTransformation(time)
                     matrix = worldMatrix * node.parentInverseMatrix()
 
-                    node.setMatrix(matrix, skipScale=True)
+                    node.setMatrix(matrix, skipTranslate=skipTranslate, skipRotate=skipRotate, skipScale=skipScale)
 
                 else:
 
@@ -654,7 +664,7 @@ class PoseNode(psonobject.PSONObject):
         """
         Getter method that returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self.pose.scene
@@ -965,6 +975,8 @@ class PoseNode(psonobject.PSONObject):
 
         # Iterate through attributes
         #
+        nodeName = node.name()
+
         insertAt = kwargs.get('insertAt', None)
         animationRange = kwargs.get('animationRange', self.pose.animationRange)
         skipUserAttributes = kwargs.get('skipUserAttributes', False)
@@ -981,16 +993,24 @@ class PoseNode(psonobject.PSONObject):
             #
             if not node.hasAttr(attribute.name):
 
-                log.warning(f'Cannot locate "{attribute.name}" attribute from "{node.name()}" node!')
+                log.warning(f'Cannot locate "{attribute.name}" attribute from "{nodeName}" node!')
+                continue
+
+            # Check if plug is animatable
+            #
+            plug = node.findPlug(attribute.name)
+            isAnimatable = plugutils.isAnimatable(plug)
+
+            if not isAnimatable:
+
+                log.warning(f'Skipping "{attribute.name}" non-keyable attribute on "{nodeName}" node!')
                 continue
 
             # Check if user attributes should be skipped
             #
-            plug = node.findPlug(attribute.name)
-
             if skipUserAttributes and plug.isDynamic:
 
-                log.debug(f'Skipping "{attribute.name}" user attribute on "{node.name()}" node!')
+                log.debug(f'Skipping "{attribute.name}" user attribute on "{nodeName}" node!')
                 continue
 
             # Apply keyframes to animation curve
@@ -1282,6 +1302,27 @@ class PoseAttribute(psonobject.PSONObject):
         """
 
         self._postInfinityType = postInfinityType
+
+    @property
+    def weighted(self):
+        """
+        Getter method that returns the `weighted` flag for this animation curve.
+
+        :rtype: bool
+        """
+
+        return self._weighted
+
+    @weighted.setter
+    def weighted(self, weighted):
+        """
+        Setter method that updates the `weighted` flag for this animation curve.
+
+        :type weighted: bool
+        :rtype: None
+        """
+
+        self._weighted = weighted
 
     @property
     def keyframes(self):

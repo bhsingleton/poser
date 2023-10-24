@@ -3,7 +3,7 @@ import math
 from abc import abstractmethod
 from enum import IntEnum
 from maya.api import OpenMaya as om
-from mpy import mpynode, mpyfactory
+from mpy import mpyscene, mpynode
 from dcc.json import psonobject
 from dcc.python import stringutils
 from dcc.maya.libs import transformutils, ikutils
@@ -77,7 +77,7 @@ class RetargetBinder(psonobject.PSONObject):
 
         # Declare private variables
         #
-        self._scene = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
+        self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
         self._type = kwargs.get('type', RetargetType.Unknown)
         self._side = kwargs.get('side', RetargetSide.Unknown)
         self._source = []
@@ -101,7 +101,7 @@ class RetargetBinder(psonobject.PSONObject):
         """
         Getter method that returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self._scene()
@@ -567,7 +567,7 @@ class AbstractRetargeter(psonobject.PSONObject):
 
         # Declare private variables
         #
-        self._scene = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
+        self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
         self._binder = RetargetBinder()
         self._parent = self.nullWeakReference
         self._children = notifylist.NotifyList()
@@ -594,7 +594,7 @@ class AbstractRetargeter(psonobject.PSONObject):
         """
         Getter method that returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self._scene()
@@ -1680,7 +1680,7 @@ class Retargeter(psonobject.PSONObject):
 
         # Declare private variables
         #
-        self._scene = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
+        self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
         self._name = kwargs.get('name', '')
         self._root = kwargs.get('root', None)
 
@@ -1695,7 +1695,7 @@ class Retargeter(psonobject.PSONObject):
         """
         Getter method that returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self._scene()

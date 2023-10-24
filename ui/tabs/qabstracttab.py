@@ -17,7 +17,7 @@ class QAbstractTab(quicwidget.QUicWidget):
         """
         Returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self.window().scene

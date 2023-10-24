@@ -2,7 +2,7 @@ import os
 import webbrowser
 
 from maya.api import OpenMaya as om
-from mpy import mpynode, mpyfactory
+from mpy import mpyscene, mpynode
 from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from six import string_types, integer_types
 from fnmatch import fnmatchcase
@@ -100,7 +100,7 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Store reference to scene interface
         #
-        cls.__scene__ = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
+        cls.__scene__ = mpyscene.MPyScene.getInstance(asWeakReference=True)
 
         # Load rig configurations
         #
@@ -161,7 +161,7 @@ class QEzPoser(quicwindow.QUicWindow):
         """
         Returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return cls.__scene__()

@@ -1,7 +1,7 @@
 import json
 
 from maya.api import OpenMaya as om
-from mpy import mpyfactory
+from mpy import mpyscene
 from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.ui import qrollout, qdivider, qtimespinbox, qxyzwidget, qseparator
 from dcc.python import stringutils
@@ -36,7 +36,7 @@ class QAlignRollout(qrollout.QRollout):
 
         # Declare private variables
         #
-        self._scene = mpyfactory.MPyFactory.getInstance(asWeakReference=True)
+        self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
         self._sourceNode = None
         self._targetNode = None
 
@@ -279,7 +279,7 @@ class QAlignRollout(qrollout.QRollout):
         """
         Getter method that returns the scene interface.
 
-        :rtype: mpyfactory.MPyFactory
+        :rtype: mpyscene.MPyScene
         """
 
         return self._scene()
