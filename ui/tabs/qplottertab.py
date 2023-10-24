@@ -55,11 +55,14 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         self.endTimeWidget = None
         self.endTimeCheckBox = None
         self.endTimeSpinBox = None
+        self.matchWidget = None
+        self.matchTranslateCheckBox = None
+        self.matchRotateCheckBox = None
+        self.matchScaleCheckBox = None
+        self.matchButtonGroup = None
         self.keyframeWidget = None
         self.bakeKeysRadioButton = None
         self.preserveKeysRadioButton = None
-        self.revertKeysRadioButton = None
-        self.resampleKeysRadioButton = None
         self.plotButtonGroup = None
         self.stepWidget = None
         self.stepCheckBox = None
@@ -172,13 +175,20 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         self.endTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.CurrentTime)
         self.endTimeSpinBox.setValue(self.scene.endTime)
 
-        # Edit keyframe button group
+        # Initialize match button group
+        #
+        self.matchButtonGroup = QtWidgets.QButtonGroup(parent=self.matchWidget)
+        self.matchButtonGroup.setObjectName('matchButtonGroup')
+        self.matchButtonGroup.setExclusive(False)
+        self.matchButtonGroup.addButton(self.matchTranslateCheckBox, id=0)
+        self.matchButtonGroup.addButton(self.matchRotateCheckBox, id=1)
+        self.matchButtonGroup.addButton(self.matchScaleCheckBox, id=2)
+
+        # Initialize keyframe button group
         #
         self.plotButtonGroup = QtWidgets.QButtonGroup(parent=self.settingsGroupBox)
         self.plotButtonGroup.addButton(self.bakeKeysRadioButton, id=0)
         self.plotButtonGroup.addButton(self.preserveKeysRadioButton, id=1)
-        self.plotButtonGroup.addButton(self.revertKeysRadioButton, id=2)
-        self.plotButtonGroup.addButton(self.resampleKeysRadioButton, id=3)
 
     def loadSettings(self, settings):
         """
@@ -199,6 +209,8 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         self.setStep(int(settings.value('tabs/plotter/step', defaultValue=1)))
         self.setStepEnabled(bool(settings.value('tabs/plotter/stepEnabled', defaultValue=1)))
 
+        # Load animation range
+        #
         startTimeEnabled = bool(settings.value('tabs/plotter/startTimeEnabled', defaultValue=0))
         self.startTimeCheckBox.setChecked(startTimeEnabled)
 
@@ -249,6 +261,27 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         # Save animation guides to scene properties
         #
         self.scene.properties['animGuides'] = poseutils.dumpPose(self.guides)
+
+    def transformOptions(self):
+        """
+        Returns the transform options.
+
+        :rtype: Tuple[bool, bool, bool]
+        """
+
+        return [action.isChecked() for action in self.matchButtonGroup.buttons()]
+
+    def setTransformOptions(self, options):
+        """
+        Updates the transform options.
+
+        :type options: Tuple[bool, bool, bool]
+        :rtype: None
+        """
+
+        for (i, action) in enumerate(self.matchButtonGroup.buttons()):
+
+            action.setChecked(options[i])
 
     def plotOption(self):
         """
@@ -462,7 +495,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Get selected nodes
         #
-        selection = self.scene.selection(apiType=om.MFn.kTransform)
+        selection = sorted(self.scene.selection(apiType=om.MFn.kTransform), key=self.getSortPriority)
         selectionCount = len(selection)
 
         if selectionCount == 0:
@@ -475,26 +508,20 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         option = self.plotOption()
         animationRange = self.animationRange()
         step = self.step() if self.stepEnabled() else 1
-        preserveKeys = option == 1
+        preserveKeys = (option == 1)
         snapKeys = self.snapKeys()
+        translateEnabled, rotateEnabled, scaleEnabled = self.transformOptions()
 
-        if option == 0 or option == 1:  # Bake/Preserve keys
-
-            guide.bakeTransformationsTo(
-                *selection,
-                animationRange=animationRange,
-                step=step,
-                snapKeys=snapKeys,
-                preserveKeys=preserveKeys
-            )
-
-        elif option == 2:  # Revert keys
-
-            guide.applyAnimationTo(*selection)
-
-        else:  # Resample keys
-
-            raise NotImplementedError('Resample keys has not been implemented!')
+        guide.bakeTransformationsTo(
+            *selection,
+            animationRange=animationRange,
+            step=step,
+            snapKeys=snapKeys,
+            preserveKeys=preserveKeys,
+            skipTranslate=(not translateEnabled),
+            skipRotate=(not rotateEnabled),
+            skipScale=(not scaleEnabled)
+        )
     
     @undo(state=False)
     def synchronize(self):
@@ -650,8 +677,10 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Create new pose and synchronize
         #
+        selection = sorted(self.scene.selection(apiType=om.MFn.kTransform), key=self.getSortPriority)
+
         pose = poseutils.createPose(
-            *self.scene.selection(),
+            *selection,
             name=name,
             animationRange=self.scene.animationRange,
             skipKeys=False,
