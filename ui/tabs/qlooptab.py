@@ -53,11 +53,12 @@ class QLoopTab(qabstracttab.QAbstractTab):
         self.alignTangentsPushButton = None
 
         self.bakeGroupBox = None
+        self.bakeLabel = None
         self.startTimeWidget = None
-        self.startTimeCheckBox = None
+        self.startTimeLabel = None
         self.startTimeSpinBox = None
         self.endTimeWidget = None
-        self.endTimeCheckBox = None
+        self.endTimeLabel = None
         self.endTimeSpinBox = None
         self.alignEndTangentsCheckBox = None
         self.skipCustomAttributesCheckBox = None
@@ -152,6 +153,11 @@ class QLoopTab(qabstracttab.QAbstractTab):
         self.infinityTypeButtonGroup.addButton(self.cycleOffsetPushButton, id=3)
         self.infinityTypeButtonGroup.addButton(self.oscillatePushButton, id=4)
 
+        # Edit start/end time spin boxes
+        #
+        self.startTimeSpinBox.setDefaultType(self.startTimeSpinBox.DefaultType.StartTime)
+        self.endTimeSpinBox.setDefaultType(self.endTimeSpinBox.DefaultType.EndTime)
+
     def loadSettings(self, settings):
         """
         Loads the user settings.
@@ -173,11 +179,6 @@ class QLoopTab(qabstracttab.QAbstractTab):
         startTime = int(settings.value('tabs/loop/startTime', defaultValue=self.scene.startTime))
         endTime = int(settings.value('tabs/loop/endTime', defaultValue=self.scene.endTime))
         self.setAnimationRange((startTime, endTime))
-
-        startTimeEnabled = bool(settings.value('tabs/loop/startTimeEnabled', defaultValue=0))
-        endTimeEnabled = bool(settings.value('tabs/loop/endTimeEnabled', defaultValue=0))
-        self.startTimeCheckBox.setChecked(startTimeEnabled)
-        self.endTimeCheckBox.setChecked(endTimeEnabled)
 
     def saveSettings(self, settings):
         """
@@ -201,10 +202,6 @@ class QLoopTab(qabstracttab.QAbstractTab):
         settings.setValue('tabs/loop/startTime', startTime)
         settings.setValue('tabs/loop/endTime', endTime)
 
-        startTimeEnabled, endTimeEnabled = self.startTimeCheckBox.isChecked(), self.endTimeCheckBox.isChecked()
-        settings.setValue('tabs/loop/startTimeEnabled', int(startTimeEnabled))
-        settings.setValue('tabs/loop/endTimeEnabled', int(endTimeEnabled))
-
     def animationRange(self):
         """
         Returns the user specified animation range.
@@ -212,8 +209,8 @@ class QLoopTab(qabstracttab.QAbstractTab):
         :rtype: Tuple[int, int]
         """
 
-        startTime = self.startTimeSpinBox.value() if self.startTimeCheckBox.isChecked() else self.scene.startTime
-        endTime = self.endTimeSpinBox.value() if self.endTimeCheckBox.isChecked() else self.scene.endTime
+        startTime = self.startTimeSpinBox.value()
+        endTime = self.endTimeSpinBox.value()
 
         return startTime, endTime
 
@@ -311,10 +308,12 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
                 # Edit in/out tangent types
                 #
-                lastIndex = numInputs - 1
-
                 animCurve.setInTangentType(0, oma.MFnAnimCurve.kTangentAuto, change=change)
+                animCurve.setOutTangentType(0, oma.MFnAnimCurve.kTangentAuto, change=change)
+
+                lastIndex = numInputs - 1
                 animCurve.setInTangentType(lastIndex, oma.MFnAnimCurve.kTangentAuto, change=change)
+                animCurve.setOutTangentType(lastIndex, oma.MFnAnimCurve.kTangentAuto, change=change)
 
         # Cache changes
         #
@@ -368,31 +367,75 @@ class QLoopTab(qabstracttab.QAbstractTab):
                 #
                 if oma.MFnAnimCurve.kTangentFixed in (inTangentType, outTangentType):
 
-                    inTangentXY, outTangentXY = animCurve.getTangentXY(0, True), animCurve.getTangentXY(0, False)
+                    isLocked = animCurve.tangentsLocked(0)
+                    inTangentX, inTangentY = animCurve.getTangentXY(0, True)
+                    outTangentX, outTangentY = animCurve.getTangentXY(0, False)
 
                     animCurve.setTangentsLocked(lastIndex, False, change=change)
-                    animCurve.setTangent(lastIndex, inTangentXY, True, convertUnits=False, change=change)
-                    animCurve.setTangent(lastIndex, outTangentXY, False, convertUnits=False, change=change)
-                    animCurve.setTangentsLocked(lastIndex, True, change=change)
+                    animCurve.setTangent(lastIndex, inTangentX, inTangentY, True, convertUnits=False, change=change)
+                    animCurve.setTangent(lastIndex, outTangentX, outTangentY, False, convertUnits=False, change=change)
+                    animCurve.setTangentsLocked(lastIndex, isLocked, change=change)
 
         # Cache changes
         #
         commit(change.redoIt, change.undoIt)
 
+    def ensureLoopable(self, animCurve, animationRange, change=None):
+        """
+        Ensures that the supplied anim-curve has keyframes on the specified start and end frame.
+
+        :type animCurve: mpynode.MPyNode
+        :type animationRange: Tuple[int, int]
+        :type change: oma.MAnimCurveChange
+        :rtype: None
+        """
+
+        startFrame, endFrame = animationRange
+
+        startTime = om.MTime(startFrame, unit=om.MTime.uiUnit())
+        animCurve.insertKey(startTime, change=change)
+
+        endTime = om.MTime(endFrame, unit=om.MTime.uiUnit())
+        animCurve.insertKey(endTime, change=change)
+
+    def removeOutOfRangeKeys(self, animCurve, animationRange, change=None):
+        """
+        Removes any keyframes outside the specified start and end frame.
+
+        :type animCurve: mpynode.MPyNode
+        :type animationRange: Tuple[int, int]
+        :type change: oma.MAnimCurveChange
+        :rtype: None
+        """
+
+        startFrame, endFrame = animationRange
+
+        for i in reversed(range(animCurve.numKeys)):
+
+            frame = animCurve.input(i).value
+
+            if not (startFrame <= frame <= endFrame):
+
+                animCurve.remove(i, change=change)
+
+            else:
+
+                continue
+
     @undo(name='Bake Infinity Curves')
-    def bakeInfinityCurves(self, *nodes, animationRange=None):
+    def bakeInfinityCurves(self, nodes, loopRange):
         """
         Bakes the infinity animation curves on the supplied nodes.
 
-        :type nodes: Union[mpynode.MPyNode, List[mpynode.MPyNode]]
-        :type animationRange: Tuple[int, int]
+        :type nodes: List[mpynode.MPyNode]
+        :type loopRange: Tuple[int, int]
         :rtype: None
         """
 
         # Iterate through nodes
         #
-        animationRange = animationRange if not stringutils.isNullOrEmpty(animationRange) else self.scene.animationRange
-        startTime, endTime = animationRange
+        startLoop, endLoop = loopRange
+        animationRange = self.scene.animationRange
 
         change = oma.MAnimCurveChange()
 
@@ -410,33 +453,32 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
                     continue
 
-                # Check if anim-curve has enough inputs
+                # Iterate through infinity keyframes
                 #
+                self.ensureLoopable(animCurve, loopRange, change=change)
+                self.removeOutOfRangeKeys(animCurve, loopRange, change=change)
+
                 keyframes = animCurve.getInfinityKeys(animationRange, alignEndTangents=self.alignEndTangents)
-                numKeyframes = len(keyframes)
-
-                if not (numKeyframes >= 2):
-
-                    continue
-
-                # Iterate through keyframes
-                #
-                startInput, endInput = animCurve.inputRange()
-
+                
                 for keyframe in keyframes:
 
                     # Check if keyframe is out-of-range
                     #
-                    if not (startTime <= keyframe.time <= endTime) or (startInput <= keyframe.time < endInput):
+                    if startLoop <= keyframe.time < endLoop:
 
                         continue
 
-                    # Insert keyframe
+                    # Add keyframe
                     #
                     time = om.MTime(keyframe.time, unit=om.MTime.uiUnit())
-                    index = animCurve.insertKey(time, change=change)
 
-                    animCurve.setValue(index, keyframe.value, change=change)
+                    index = animCurve.addKey(
+                        time,
+                        keyframe.value,
+                        tangentInType=animCurve.kTangentAuto,
+                        tangentOutType=animCurve.kTangentAuto,
+                        change=change
+                    )
 
                     # Update tangent handles
                     #
@@ -453,7 +495,6 @@ class QLoopTab(qabstracttab.QAbstractTab):
         # Cache changes
         #
         commit(change.redoIt, change.undoIt)
-
     # endregion
 
     # region Slots
@@ -517,5 +558,5 @@ class QLoopTab(qabstracttab.QAbstractTab):
         nodes = self.scene.selection(apiType=om.MFn.kTransform)
         animationRange = self.animationRange()
 
-        self.bakeInfinityCurves(*nodes, animationRange=animationRange)
+        self.bakeInfinityCurves(nodes, animationRange)
     # endregion
