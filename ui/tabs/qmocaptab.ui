@@ -182,6 +182,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Unloads the referenced FBX data.</string>
            </property>
@@ -203,6 +206,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
            </property>
            <property name="toolTip">
             <string>Loads the referenced FBX data.</string>
@@ -330,6 +336,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="toolTip">
             <string>The referenced rig that the animation will be retargeted to.</string>
            </property>
@@ -409,6 +418,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
            </property>
            <property name="toolTip">
             <string>The binder used to remap data onto the selected rig.</string>
@@ -490,6 +502,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="toolTip">
             <string>The frame to start baking.</string>
            </property>
@@ -517,6 +532,9 @@
              <horstretch>5</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
            </property>
            <property name="toolTip">
             <string>The frame to stop baking.</string>
@@ -548,6 +566,9 @@
              <horstretch>4</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
            </property>
            <property name="toolTip">
             <string>The frame interval to bake at.</string>
@@ -781,6 +802,9 @@
                 <height>20</height>
                </size>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::ClickFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -809,6 +833,9 @@
                 <width>20</width>
                 <height>20</height>
                </size>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="text">
                <string/>
@@ -941,6 +968,9 @@
              <height>24</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -1047,6 +1077,9 @@
              <height>24</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -1080,6 +1113,9 @@
           <height>24</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="text">
          <string>Batch</string>
         </property>
@@ -1109,6 +1145,9 @@
        <height>24</height>
       </size>
      </property>
+     <property name="focusPolicy">
+      <enum>Qt::ClickFocus</enum>
+     </property>
      <property name="text">
       <string>Retarget</string>
      </property>
@@ -1118,15 +1157,15 @@
  </widget>
  <customwidgets>
   <customwidget>
+   <class>QTimeSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>dcc/ui/qtimespinbox.h</header>
+  </customwidget>
+  <customwidget>
    <class>QRollout</class>
    <extends>QWidget</extends>
    <header>dcc/ui/qrollout.h</header>
    <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>QTimeSpinBox</class>
-   <extends>QSpinBox</extends>
-   <header>dcc/ui/qtimespinbox.h</header>
   </customwidget>
  </customwidgets>
  <resources>

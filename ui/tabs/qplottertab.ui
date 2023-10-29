@@ -90,6 +90,9 @@
              <height>20</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Removes the selected guide.</string>
            </property>
@@ -111,6 +114,9 @@
              <width>16777215</width>
              <height>20</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
            </property>
            <property name="toolTip">
             <string>Creates a new guide from the active selection.</string>
@@ -134,6 +140,9 @@
              <height>20</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Imports a guide from a local file.</string>
            </property>
@@ -155,6 +164,9 @@
              <width>16777215</width>
              <height>20</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
            </property>
            <property name="toolTip">
             <string>Exports the selected guide.</string>
@@ -293,6 +305,9 @@
                 <height>20</height>
                </size>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
+              </property>
               <property name="toolTip">
                <string>The start frame to sample from.</string>
               </property>
@@ -400,6 +415,9 @@
                 <width>16777215</width>
                 <height>20</height>
                </size>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
               </property>
               <property name="toolTip">
                <string>The end frame to sample to.</string>
@@ -565,6 +583,9 @@
                 <width>16777215</width>
                 <height>20</height>
                </size>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
               </property>
               <property name="toolTip">
                <string>The step interval to bake transforms to.</string>
@@ -770,6 +791,9 @@
        <width>16777215</width>
        <height>20</height>
       </size>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::ClickFocus</enum>
      </property>
      <property name="text">
       <string>Plot</string>

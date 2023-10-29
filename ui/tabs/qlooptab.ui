@@ -37,6 +37,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="preInfinityPushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Updates the pre-infinity type on the selected nodes.</string>
            </property>
@@ -47,6 +50,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="postInfinityPushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Updates the post-infinity type on the selected nodes.</string>
            </property>
@@ -75,6 +81,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="cycleOffsetPushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -141,6 +150,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="oscillatePushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -207,6 +219,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="cyclePushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -279,6 +294,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="constantPushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -351,6 +369,9 @@
          </property>
          <item>
           <widget class="QPushButton" name="linearPushButton">
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="text">
             <string/>
            </property>
@@ -411,6 +432,9 @@
      <layout class="QHBoxLayout" name="horizontalLayout_4">
       <item>
        <widget class="QPushButton" name="flattenTangentsPushButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Sets the start and end tangent types to auto.</string>
         </property>
@@ -421,6 +445,9 @@
       </item>
       <item>
        <widget class="QPushButton" name="alignTangentsPushButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Copies the start tangent and pastes it onto the end tangent.</string>
         </property>
@@ -499,6 +526,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Specifies the end frame to bake to.</string>
            </property>
@@ -563,6 +593,9 @@ Any keys outside this range will be overwritten!</string>
       </item>
       <item row="5" column="1" colspan="3">
        <widget class="QPushButton" name="bakePushButton">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Bakes the pre and post infinity curves down to the current animation range.</string>
         </property>
@@ -644,6 +677,9 @@ Any keys outside this range will be overwritten!</string>
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::StrongFocus</enum>
            </property>
            <property name="toolTip">
             <string>Specifies the start frame to bake from.</string>
