@@ -41,6 +41,10 @@ class Pose(psonobject.PSONObject):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(Pose, self).__init__(*args, **kwargs)
+
         # Declare private variables
         #
         self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
@@ -60,10 +64,6 @@ class Pose(psonobject.PSONObject):
         self._animLayers.addCallback('itemAdded', self.animLayerAdded)
         self._animLayers.addCallback('itemRemoved', self.animLayerRemoved)
         self._animLayers.extend(kwargs.get('animLayers', []))
-
-        # Call parent method
-        #
-        super(Pose, self).__init__(*args, **kwargs)
     # endregion
 
     # region Properties
@@ -631,6 +631,10 @@ class PoseNode(psonobject.PSONObject):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(PoseNode, self).__init__(*args, **kwargs)
+
         # Declare private variables
         #
         self._pose = self.nullWeakReference
@@ -642,10 +646,6 @@ class PoseNode(psonobject.PSONObject):
         self._matrix = kwargs.get('matrix', om.MMatrix.kIdentity)
         self._worldMatrix = kwargs.get('worldMatrix', om.MMatrix.kIdentity)
         self._transformations = kwargs.get('transformations', {})
-
-        # Call parent method
-        #
-        super(PoseNode, self).__init__(*args, **kwargs)
     # endregion
 
     # region Properties
@@ -1159,7 +1159,7 @@ class PoseNode(psonobject.PSONObject):
 
         transformations = {}
 
-        if not (skipTransformations and skipKeys):
+        if not (skipTransformations or skipKeys):
 
             animationRange = kwargs.get('animationRange', None)
             step = kwargs.get('step', 1)
@@ -1204,6 +1204,10 @@ class PoseAttribute(psonobject.PSONObject):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(PoseAttribute, self).__init__(*args, **kwargs)
+
         # Declare private variables
         #
         self._name = kwargs.get('name', '')
@@ -1212,10 +1216,6 @@ class PoseAttribute(psonobject.PSONObject):
         self._postInfinityType = kwargs.get('postInfinityType', 0)
         self._weighted = kwargs.get('weighted', False)
         self._keyframes = kwargs.get('keyframes', [])
-
-        # Call parent method
-        #
-        super(PoseAttribute, self).__init__(*args, **kwargs)
     # endregion
 
     # region Properties
@@ -1409,6 +1409,219 @@ class PoseAttribute(psonobject.PSONObject):
     # endregion
 
 
+class PoseMember(psonobject.PSONObject):
+    """
+    Overload of `PSONObject` that interfaces with pose member data.
+    """
+
+    # region Dunderscores
+    __slots__ = (
+        '_name',
+        '_attribute',
+        '_value',
+        '_preInfinityType',
+        '_postInfinityType',
+        '_weighted',
+        '_keyframes'
+    )
+
+    def __init__(self, *args, **kwargs):
+        """
+        Private method called after a new instance is created.
+
+        :rtype: None
+        """
+
+        # Call parent method
+        #
+        super(PoseMember, self).__init__(*args, **kwargs)
+
+        # Declare private variables
+        #
+        self._animLayer = self.nullWeakReference
+        self._node = kwargs.get('node', '')
+        self._attribute = kwargs.get('attribute', '')
+        self._value = kwargs.get('value', 0.0)
+        self._preInfinityType = kwargs.get('preInfinityType', 0)
+        self._postInfinityType = kwargs.get('postInfinityType', 0)
+        self._weighted = kwargs.get('weighted', False)
+        self._keyframes = kwargs.get('keyframes', [])
+    # endregion
+
+    # region Properties
+    @property
+    def animLayer(self):
+        """
+        Getter method that returns the associated anim layer.
+
+        :rtype: PoseAnimLayer
+        """
+
+        return self._animLayer()
+
+    @property
+    def node(self):
+        """
+        Getter method that returns the name of this node.
+
+        :rtype: str
+        """
+
+        return self._node
+
+    @node.setter
+    def node(self, node):
+        """
+        Setter method that updates the name of this node.
+
+        :type node: str
+        :rtype: None
+        """
+
+        self._node = node
+
+    @property
+    def attribute(self):
+        """
+        Getter method that returns the name of this attribute.
+
+        :rtype: str
+        """
+
+        return self._node
+
+    @attribute.setter
+    def attribute(self, attribute):
+        """
+        Setter method that updates the name of this attribute.
+
+        :type attribute: str
+        :rtype: None
+        """
+
+        self._attribute = attribute
+
+    @property
+    def value(self):
+        """
+        Getter method that returns the value from this plug.
+
+        :rtype: Union[int, float]
+        """
+
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        """
+        Setter method that updates the value for this plug.
+
+        :type value: Union[int, float]
+        :rtype: None
+        """
+
+        self._value = value
+
+    @property
+    def preInfinityType(self):
+        """
+        Getter method that returns the pre-infinity type for this animation curve.
+
+        :rtype: int
+        """
+
+        return self._preInfinityType
+
+    @preInfinityType.setter
+    def preInfinityType(self, preInfinityType):
+        """
+        Setter method that updates the pre-infinity type for this animation curve.
+
+        :type preInfinityType: int
+        :rtype: None
+        """
+
+        self._preInfinityType = preInfinityType
+
+    @property
+    def postInfinityType(self):
+        """
+        Getter method that returns the post-infinity type for this animation curve.
+
+        :rtype: int
+        """
+
+        return self._postInfinityType
+
+    @postInfinityType.setter
+    def postInfinityType(self, postInfinityType):
+        """
+        Setter method that updates the post-infinity type for this animation curve.
+
+        :type postInfinityType: int
+        :rtype: None
+        """
+
+        self._postInfinityType = postInfinityType
+
+    @property
+    def weighted(self):
+        """
+        Getter method that returns the `weighted` flag for this animation curve.
+
+        :rtype: bool
+        """
+
+        return self._weighted
+
+    @weighted.setter
+    def weighted(self, weighted):
+        """
+        Setter method that updates the `weighted` flag for this animation curve.
+
+        :type weighted: bool
+        :rtype: None
+        """
+
+        self._weighted = weighted
+
+    @property
+    def keyframes(self):
+        """
+        Getter method that returns the keyframes for this animation curve.
+
+        :rtype: List[keyframe.Keyframe]
+        """
+
+        return self._keyframes
+
+    @keyframes.setter
+    def keyframes(self, keyframes):
+        """
+        Setter method that updates the keyframes for this animation curve.
+
+        :type keyframes: List[keyframe.Keyframe]
+        :rtype: None
+        """
+
+        self._keyframes.clear()
+        self._keyframes.extend(keyframes)
+    # endregion
+
+    # region Methods
+    @classmethod
+    def create(cls, plug, **kwargs):
+        """
+        Returns a new pose member using the supplied plug.
+
+        :type plug: om.MPlug
+        :rtype: PoseMember
+        """
+
+        pass
+    # endregion
+
+
 class PoseAnimLayer(psonobject.PSONObject):
     """
     Overload of `PSONObject` that interfaces with pose anim layer data.
@@ -1439,6 +1652,10 @@ class PoseAnimLayer(psonobject.PSONObject):
         :rtype: None
         """
 
+        # Call parent method
+        #
+        super(PoseAnimLayer, self).__init__(*args, **kwargs)
+
         # Declare private variables
         #
         self._pose = self.nullWeakReference
@@ -1465,11 +1682,7 @@ class PoseAnimLayer(psonobject.PSONObject):
 
         self._members.addCallback('itemAdded', self.memberAdded)
         self._members.addCallback('itemRemoved', self.memberRemoved)
-        self._members.extend(kwargs.get('members', []))
-
-        # Call parent method
-        #
-        super(PoseAnimLayer, self).__init__(*args, **kwargs)
+        self._members.update(kwargs.get('members', []))
     # endregion
 
     # region Properties
@@ -1531,7 +1744,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         """
         Getter method that returns the members from this layer.
 
-        :rtype: List[PoseAnimLayer]
+        :rtype: List[PoseMember]
         """
 
         return self._members
@@ -1541,7 +1754,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         """
         Setter method that updates the members for this layer.
 
-        :type members: Dict[str, List[PoseAttribute]]
+        :type members: Dict[str, List[PoseMember]]
         :rtype: None
         """
 
