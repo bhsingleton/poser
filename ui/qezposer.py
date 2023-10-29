@@ -6,6 +6,7 @@ from mpy import mpyscene, mpynode
 from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from six import string_types, integer_types
 from fnmatch import fnmatchcase
+from itertools import chain
 from dcc.python import stringutils
 from dcc.ui import quicwindow
 from dcc.decorators.staticinitializer import staticInitializer
@@ -667,6 +668,34 @@ class QEzPoser(quicwindow.QUicWindow):
 
         nodes = [node.object() for node in self.iterControls(visible=visible)]
         self.scene.setSelection(nodes)
+
+    @undo(state=False)
+    def selectAssociatedControls(self):
+        """
+        Selects any controls that are in the same display layer.
+
+        :rtype: None
+        """
+
+        selection = self.getSelection()
+        layers = set(filter(None, [node.getAssociatedDisplayLayer() for node in selection]))
+        nodes = set(chain(*[layer.nodes() for layer in layers]))
+
+        self.scene.setSelection(nodes)
+
+    @undo(state=False)
+    def selectOppositeControls(self, replace=True):
+        """
+        Selects the opposite nodes from the active selection.
+
+        :type replace: bool
+        :rtype: None
+        """
+
+        selection = self.getSelection()
+        oppositeNodes = set(filter(None, [node.getOppositeNode() for node in selection]))
+
+        self.scene.setSelection(oppositeNodes, replace=replace)
     # endregion
 
     # region Slots

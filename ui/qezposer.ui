@@ -35,6 +35,9 @@
     </property>
     <item>
      <widget class="QTabWidget" name="tabControl">
+      <property name="focusPolicy">
+       <enum>Qt::NoFocus</enum>
+      </property>
       <property name="tabPosition">
        <enum>QTabWidget::North</enum>
       </property>

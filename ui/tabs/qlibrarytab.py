@@ -50,36 +50,16 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         # Declare public variables
         #
         self.libraryGroupBox = None
-        self.applyPosePushButton = None
-        self.applyPoseSlider = None
-        self.applyRelativePosePushButton = None
-        self.applyAnimActionGroup = None
-        self.fileListView = None
         self.pathLineEdit = None
-
-        self.quickPoseGroupBox = None
-        self.copyPosePushButton = None
-        self.pastePosePushButton = None
-        self.zeroPosePushButton = None
-        self.resetPosePushButton = None
-        self.holdTransformPushButton = None
-        self.fetchTransformPushButton = None
-        self.matchWidget = None
-        self.matchTranslateCheckBox = None
-        self.matchRotateCheckBox = None
-        self.matchScaleCheckBox = None
-        self.matchButtonGroup = None
-        self.mirrorPosePushButton = None
-        self.mirrorAnimationPushButton = None
-        self.pullAnimationPushButton = None
-        self.pullPosePushButton = None
-
         self.directoryAction = None
         self.parentDirectoryAction = None
         self.refreshDirectoryAction = None
-
+        self.fileListView = None
         self.fileItemModel = None
         self.fileItemFilterModel = None
+        self.applyPoseSlider = None
+        self.applyPosePushButton = None
+        self.applyRelativePosePushButton = None
 
         self.createPoseMenu = None
         self.selectControlsAction = None
@@ -96,6 +76,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.openInExplorerAction = None
 
         self.applyPoseMenu = None
+        self.applyAnimActionGroup = None
         self.insertAnimAction = None
         self.replaceAnimAction = None
         self.insertTimeSpinBox = None
@@ -104,6 +85,30 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.relativeTargetAction = None
         self.pickRelativeTargetAction = None
 
+        self.quickSelectGroupBox = None
+        self.selectVisiblePushButton = None
+        self.selectAllPushButton = None
+        self.selectAssociatedPushButton = None
+        self.selectOppositePushButton = None
+
+        self.quickPoseGroupBox = None
+        self.copyPosePushButton = None
+        self.pastePosePushButton = None
+        self.zeroPosePushButton = None
+        self.resetPosePushButton = None
+        self.holdTransformPushButton = None
+        self.fetchTransformPushButton = None
+        self.matchWidget = None
+        self.matchTranslateCheckBox = None
+        self.matchRotateCheckBox = None
+        self.matchScaleCheckBox = None
+        self.matchButtonGroup = None
+
+        self.quickMirrorGroupBox = None
+        self.mirrorPosePushButton = None
+        self.mirrorAnimationPushButton = None
+        self.pullAnimationPushButton = None
+        self.pullPosePushButton = None
         self.mirrorStartTimeWidget = None
         self.mirrorStartTimeCheckBox = None
         self.mirrorStartTimeSpinBox = None
@@ -144,7 +149,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.pathLineEdit.addAction(self.refreshDirectoryAction, QtWidgets.QLineEdit.TrailingPosition)
         self.pathLineEdit.addAction(self.parentDirectoryAction, QtWidgets.QLineEdit.TrailingPosition)
 
-        # Initialize file path model
+        # Initialize file item model
         #
         self.fileItemModel = qfileitemmodel.QFileItemModel(cwd=self.cwd(), parent=self.fileListView)
         self.fileItemModel.setObjectName('fileItemModel')
@@ -153,10 +158,12 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.fileItemFilterModel.setObjectName('fileItemFilterModel')
         self.fileItemFilterModel.setFileMasks(['pose', 'anim'])
         self.fileItemFilterModel.setSourceModel(self.fileItemModel)
-        self.window().cwdChanged.connect(self.fileItemModel.setCwd)
 
         self.fileListView.setModel(self.fileItemFilterModel)
         self.fileListView.selectionModel().selectionChanged.connect(self.on_fileListView_selectionChanged)
+
+        window = self.window()
+        window.cwdChanged.connect(self.fileItemModel.setCwd)
 
         # Add "Create" menu actions
         #
@@ -1337,6 +1344,53 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         """
 
         self.pickRelativeTarget()
+
+    @QtCore.Slot(bool)
+    def on_selectVisiblePushButton_clicked(self, checked=False):
+        """
+        Slot method for the selectVisiblePushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.selectControls(visible=True)
+
+    @QtCore.Slot(bool)
+    def on_selectAllPushButton_clicked(self, checked=False):
+        """
+        Slot method for the selectAllPushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.selectControls(visible=False)
+
+    @QtCore.Slot(bool)
+    def on_selectAssociatedPushButton_clicked(self, checked=False):
+        """
+        Slot method for the selectLayerPushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.selectAssociatedControls()
+
+    @QtCore.Slot(bool)
+    def on_selectOppositePushButton_clicked(self, checked=False):
+        """
+        Slot method for the selectPosePushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        replace = not (modifiers == QtCore.Qt.ShiftModifier)
+        print(replace)
+        self.selectOppositeControls(replace=replace)
 
     @QtCore.Slot(bool)
     def on_copyPosePushButton_clicked(self, checked=False):

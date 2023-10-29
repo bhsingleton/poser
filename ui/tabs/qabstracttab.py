@@ -150,4 +150,23 @@ class QAbstractTab(quicwidget.QUicWidget):
         """
 
         self.window().selectControls(visible=visible)
+
+    def selectAssociatedControls(self):
+        """
+        Selects any controls that are in the same display layer.
+
+        :rtype: None
+        """
+
+        self.window().selectAssociatedControls()
+
+    def selectOppositeControls(self, replace=True):
+        """
+        Selects the opposite nodes from the active selection.
+
+        :type replace: bool
+        :rtype: None
+        """
+
+        self.window().selectOppositeControls(replace=replace)
     # endregion

@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>349</width>
-    <height>572</height>
+    <width>350</width>
+    <height>650</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>300</width>
-    <height>500</height>
+    <height>600</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -51,6 +51,9 @@
           <width>16777215</width>
           <height>20</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
         </property>
         <property name="toolTip">
          <string>Applies the selected pose/animation, relative, to the current target.</string>
@@ -173,6 +176,9 @@
           <height>20</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Applies the selected pose/animation onto the active selection.</string>
         </property>
@@ -187,6 +193,127 @@
         </property>
         <property name="arrowType">
          <enum>Qt::DownArrow</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="quickSelectGroupBox">
+     <property name="title">
+      <string>Quick Select:</string>
+     </property>
+     <layout class="QGridLayout" name="quickSelectLayout">
+      <item row="0" column="0">
+       <widget class="QPushButton" name="selectVisiblePushButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Selects all visible controls.</string>
+        </property>
+        <property name="text">
+         <string>Select Visible</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="selectAllPushButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Selects all controls.</string>
+        </property>
+        <property name="text">
+         <string>Select All</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="selectAssociatedPushButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Selects controls in the same display layer.</string>
+        </property>
+        <property name="text">
+         <string>Select Associated</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="selectOppositePushButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Selects the opposite controls.</string>
+        </property>
+        <property name="text">
+         <string>Select Opposite</string>
         </property>
        </widget>
       </item>
@@ -221,6 +348,40 @@
         </property>
        </widget>
       </item>
+      <item row="3" column="2">
+       <widget class="QPushButton" name="fetchTransformPushButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Fetches the transform matrices and applies it to the selected node.</string>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="text">
+         <string>Fetch Transform</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="2">
        <widget class="QPushButton" name="resetPosePushButton">
         <property name="minimumSize">
@@ -235,30 +396,11 @@
           <height>20</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="text">
          <string>Reset Pose</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
-       <widget class="QPushButton" name="copyPosePushButton">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Copies a pose to the clipboard.</string>
-        </property>
-        <property name="text">
-         <string>Copy Pose</string>
         </property>
        </widget>
       </item>
@@ -275,6 +417,9 @@
           <width>16777215</width>
           <height>20</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
         </property>
         <property name="text">
          <string>Zero Pose</string>
@@ -295,33 +440,14 @@
           <height>20</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Holds the transform matrices from the selected nodes.</string>
         </property>
         <property name="text">
          <string>Hold Transform</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="2">
-       <widget class="QPushButton" name="pullPosePushButton">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Pulls the pose from the opposite nodes.</string>
-        </property>
-        <property name="text">
-         <string>Pull Pose</string>
         </property>
        </widget>
       </item>
@@ -485,8 +611,92 @@
         </layout>
        </widget>
       </item>
-      <item row="3" column="2">
-       <widget class="QPushButton" name="fetchTransformPushButton">
+      <item row="0" column="2">
+       <widget class="QPushButton" name="pastePosePushButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Pastes the pose from the clipboard.</string>
+        </property>
+        <property name="text">
+         <string>Paste Pose</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QPushButton" name="copyPosePushButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Copies a pose to the clipboard.</string>
+        </property>
+        <property name="text">
+         <string>Copy Pose</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="quickMirrorGroupBox">
+     <property name="title">
+      <string>Quick Mirror:</string>
+     </property>
+     <layout class="QGridLayout" name="quickMirrorLayout">
+      <item row="0" column="1">
+       <widget class="QPushButton" name="pullPosePushButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Pulls the pose from the opposite nodes.</string>
+        </property>
+        <property name="text">
+         <string>Pull Pose</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QPushButton" name="pullAnimationPushButton">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
           <horstretch>0</horstretch>
@@ -505,25 +715,49 @@
           <height>20</height>
          </size>
         </property>
-        <property name="toolTip">
-         <string>Fetches the transform matrices and applies it to the selected node.</string>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
         </property>
-        <property name="layoutDirection">
-         <enum>Qt::LeftToRight</enum>
+        <property name="toolTip">
+         <string>Pulls the animation from the opposite nodes.</string>
         </property>
         <property name="text">
-         <string>Fetch Transform</string>
+         <string>Pull Animation</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="1" colspan="2">
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="mirrorAnimationPushButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>20</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
+        <property name="toolTip">
+         <string>Mirrors the animation to the opposite nodes.</string>
+        </property>
+        <property name="text">
+         <string>Mirror Animation</string>
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
+      <item row="0" column="0">
        <widget class="QPushButton" name="mirrorPosePushButton">
         <property name="minimumSize">
          <size>
@@ -537,6 +771,9 @@
           <height>20</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Mirrors the pose to the opposite nodes.</string>
         </property>
@@ -545,29 +782,7 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
-       <widget class="QPushButton" name="pastePosePushButton">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Pastes the pose from the clipboard.</string>
-        </property>
-        <property name="text">
-         <string>Paste Pose</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="1" colspan="2">
+      <item row="2" column="0" colspan="2">
        <widget class="QWidget" name="mirrorTimeWidget" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -639,6 +854,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
+              </property>
               <property name="prefix">
                <string>Start: </string>
               </property>
@@ -697,6 +915,9 @@
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
               </property>
               <property name="prefix">
                <string>End: </string>
@@ -760,6 +981,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::StrongFocus</enum>
+              </property>
               <property name="prefix">
                <string>Insert: </string>
               </property>
@@ -775,62 +999,6 @@
           </widget>
          </item>
         </layout>
-       </widget>
-      </item>
-      <item row="7" column="2">
-       <widget class="QPushButton" name="pullAnimationPushButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Pulls the animation from the opposite nodes.</string>
-        </property>
-        <property name="text">
-         <string>Pull Animation</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="1">
-       <widget class="QPushButton" name="mirrorAnimationPushButton">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>16777215</width>
-          <height>20</height>
-         </size>
-        </property>
-        <property name="toolTip">
-         <string>Mirrors the animation to the opposite nodes.</string>
-        </property>
-        <property name="text">
-         <string>Mirror Animation</string>
-        </property>
        </widget>
       </item>
      </layout>
