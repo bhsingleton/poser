@@ -8,7 +8,7 @@ from dcc.python import stringutils
 from dcc.dataclasses import keyframe
 from dcc.collections import notifylist, notifydict
 from dcc.generators.inclusiverange import inclusiveRange
-from dcc.maya.libs import plugutils, plugmutators, transformutils
+from dcc.maya.libs import plugutils, plugmutators, transformutils, animutils
 from dcc.maya.decorators.animate import animate
 
 import logging
@@ -595,12 +595,24 @@ class Pose(psonobject.PSONObject):
         :key animationRange: Tuple[int, int]
         :key step: int
         :key skipKeys: bool
+        :key skipLayers: bool
         :key skipTransformation: bool
         :rtype: Pose
         """
 
+        # Create new instance and add nodes
+        #
         instance = cls(**kwargs)
         instance.nodes = [PoseNode.create(node, **kwargs) for node in nodes]
+
+        # Check if anim layers should be added
+        #
+        baseLayer = animutils.getBaseAnimLayer()
+        skipLayers = kwargs.get('skipLayers', True)
+
+        if not skipLayers and not baseLayer.isNull():
+
+            instance.animLayers = [PoseAnimLayer.create(mpynode.MPyNode(baseLayer), nodes=nodes)]
 
         return instance
     # endregion
@@ -1148,6 +1160,7 @@ class PoseNode(psonobject.PSONObject):
         :key animationRange: Tuple[int, int]
         :key step: int
         :key skipKeys: bool
+        :key skipLayers: bool
         :key skipTransformation: bool
         :rtype: PoseNode
         """
@@ -1610,15 +1623,30 @@ class PoseMember(psonobject.PSONObject):
 
     # region Methods
     @classmethod
-    def create(cls, plug, **kwargs):
+    def create(cls, plug, animCurve, **kwargs):
         """
         Returns a new pose member using the supplied plug.
 
         :type plug: om.MPlug
+        :type animCurve: mpynode.MPyNode
         :rtype: PoseMember
         """
 
-        pass
+        node = mpynode.MPyNode(plug.node())
+        attribute = plug.partialName(useLongNames=True)
+        value = plugmutators.getValue(plug),
+
+        instance = cls(
+            node=node.name(),
+            attribute=attribute,
+            value=value,
+            preInfinityType=animCurve.preInfinity,
+            postInfinityType=animCurve.postInfinity,
+            weighted=animCurve.isWeighted,
+            keyframes=animCurve.getKeys()
+        )
+
+        return instance
     # endregion
 
 
@@ -1662,7 +1690,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         self._name = kwargs.get('name', '')
         self._parent = kwargs.get('parent', self.nullWeakReference)
         self._children = notifylist.NotifyList()
-        self._members = notifydict.NotifyDict()
+        self._members = notifylist.NotifyList()
         self._mute = kwargs.get('mute', False)
         self._solo = kwargs.get('solo', False)
         self._lock = kwargs.get('lock', False)
@@ -2003,7 +2031,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         :rtype: None
         """
 
-        pass
+        member._animLayer = self.weakReference()
 
     def memberRemoved(self, member):
         """
@@ -2013,7 +2041,7 @@ class PoseAnimLayer(psonobject.PSONObject):
         :rtype: None
         """
 
-        pass
+        member._animLayer = self.nullWeakReference
     # endregion
 
     # region Methods
@@ -2027,5 +2055,51 @@ class PoseAnimLayer(psonobject.PSONObject):
         :rtype: PoseAnimLayer
         """
 
-        pass
+        # Create new layer
+        #
+        instance = cls(
+            name=layer.name(),
+            mute=layer.mute,
+            solo=layer.solo,
+            lock=layer.lock,
+            ghost=layer.ghost,
+            ghostColor=layer.ghostColor,
+            override=layer.override,
+            passthrough=layer.passthrough,
+            weight=layer.weight,
+            rotationAccumulationMode=layer.rotationAccumulationMode,
+            scaleAccumulationMode=layer.scaleAccumulationMode
+        )
+
+        # Iterate through members
+        #
+        plugs = layer.members()
+
+        for plug in plugs:
+
+            # Check if member is in nodes
+            #
+            node = plug.node()
+
+            if node in nodes:
+
+                continue
+
+            # Add member to layer
+            #
+            animCurve = layer.getAssociatedAnimCurve(plug)
+
+            member = PoseMember.create(plug, animCurve)
+            instance.members.append(member)
+
+        # Check if layer has any children
+        #
+        children = layer.children()
+        numChildren = len(children)
+
+        if numChildren > 0:
+
+            instance.children = [cls.create(child, nodes=nodes) for child in children]
+
+        return instance
     # endregion
