@@ -345,12 +345,27 @@ class QMocapTab(qabstracttab.QAbstractTab):
         #
         if self.scene.doesNodeExist(self.__source__):
 
-            self._source = self.scene(self.__source__)
+            # Check if reference is valid
+            # If not, go ahead and delete the corrupted reference
+            #
+            source = self.scene(self.__source__)
+
+            if not source.isAlive():
+
+                source.unlock()
+                source.delete()
+                return
+
+            # Update source widget
+            #
+            self._source = source
             self.sourcePathLineEdit.setText(self._source.filePath())
             self.loadSourcePushButton.setChecked(True)
 
         else:
 
+            # Clear source widget
+            #
             self._source = None
             self.sourcePathLineEdit.setText('')
             self.unloadSourcePushButton.setChecked(True)
