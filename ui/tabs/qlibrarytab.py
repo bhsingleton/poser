@@ -98,6 +98,8 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.resetPosePushButton = None
         self.holdTransformPushButton = None
         self.fetchTransformPushButton = None
+        self.leftFetchTransformPushButton = None
+        self.rightFetchTransformPushButton = None
         self.matchWidget = None
         self.matchTranslateCheckBox = None
         self.matchRotateCheckBox = None
@@ -1456,6 +1458,30 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
+        self.fetchPose()
+
+    @QtCore.Slot(bool)
+    def on_leftFetchTransformPushButton_clicked(self, checked=False):
+        """
+        Slot method for the leftFetchTransformPushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.scene.time -= 1
+        self.fetchPose()
+
+    @QtCore.Slot(bool)
+    def on_rightFetchTransformPushButton_clicked(self, checked=False):
+        """
+        Slot method for the rightFetchTransformPushButton's `clicked` signal.
+
+        :type checked: bool
+        :rtype: None
+        """
+
+        self.scene.time += 1
         self.fetchPose()
 
     @QtCore.Slot(bool)
