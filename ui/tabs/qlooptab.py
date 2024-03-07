@@ -1,5 +1,6 @@
 from maya.api import OpenMaya as om, OpenMayaAnim as oma
 from Qt import QtCore, QtWidgets, QtGui
+from enum import IntEnum
 from dcc.python import stringutils
 from dcc.maya.decorators.undo import undo, commit
 from . import qabstracttab
@@ -19,12 +20,27 @@ INFINITY_TYPES = {
 }
 
 
+class BakeType(IntEnum):
+    """
+    Enum class of all available bake types.
+    """
+
+    NONE = -1
+    RANGE = 0
+    OUT_OF_RANGE = 1
+
+
 class QLoopTab(qabstracttab.QAbstractTab):
     """
     Overload of `QAbstractTab` that manipulates looping animations.
     """
 
     # region Dunderscores
+    __labels__ = (
+        'Enter the start and end frame of your loop.\nAny keys outside this range will be overwritten with baked keys!',
+        'Enter the start and end frame of your animation.\nAny infinity curves inside this range will be baked down!'
+    )
+
     def __init__(self, *args, **kwargs):
         """
         Private method called after a new instance has been created.
@@ -54,6 +70,10 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         self.bakeGroupBox = None
         self.bakeLabel = None
+        self.bakeTypeWidget = None
+        self.bakeRangeRadioButton = None
+        self.bakeOutOfRangeRadioButton = None
+        self.bakeTypeButtonGroup = None
         self.startTimeWidget = None
         self.startTimeLabel = None
         self.startTimeSpinBox = None
@@ -153,6 +173,14 @@ class QLoopTab(qabstracttab.QAbstractTab):
         self.infinityTypeButtonGroup.addButton(self.cycleOffsetPushButton, id=3)
         self.infinityTypeButtonGroup.addButton(self.oscillatePushButton, id=4)
 
+        # Initialize baking button group
+        #
+        self.bakeTypeButtonGroup = QtWidgets.QButtonGroup(self.bakeGroupBox)
+        self.bakeTypeButtonGroup.setExclusive(True)
+        self.bakeTypeButtonGroup.addButton(self.bakeRangeRadioButton, id=0)
+        self.bakeTypeButtonGroup.addButton(self.bakeOutOfRangeRadioButton, id=1)
+        self.bakeTypeButtonGroup.idClicked.connect(self.on_bakeTypeButtonGroup_idClicked)
+
         # Edit start/end time spin boxes
         #
         self.startTimeSpinBox.setDefaultType(self.startTimeSpinBox.DefaultType.StartTime)
@@ -180,6 +208,9 @@ class QLoopTab(qabstracttab.QAbstractTab):
         endTime = int(settings.value('tabs/loop/endTime', defaultValue=self.scene.endTime))
         self.setAnimationRange((startTime, endTime))
 
+        bakeType = int(settings.value('tabs/loop/bakeType', defaultValue=0))
+        self.setBakeType(bakeType)
+
     def saveSettings(self, settings):
         """
         Saves the user settings.
@@ -197,10 +228,35 @@ class QLoopTab(qabstracttab.QAbstractTab):
         settings.setValue('tabs/loop/infinityType', self.infinityType)
         settings.setValue('tabs/loop/alignEndTangents', int(self.alignEndTangents))
         settings.setValue('tabs/loop/skipCustomAttributes', int(self.skipCustomAttributes))
+        settings.setValue('tabs/loop/bakeType', int(self.bakeType()))
 
         startTime, endTime = self.animationRange()
         settings.setValue('tabs/loop/startTime', startTime)
         settings.setValue('tabs/loop/endTime', endTime)
+
+    def bakeType(self):
+        """
+        Returns the current bake type.
+
+        :rtype: BakeType
+        """
+
+        return BakeType(self.bakeTypeButtonGroup.checkedId())
+
+    def setBakeType(self, bakeType):
+        """
+        Updates the bake type.
+
+        :type bakeType: Union[int, BakeType]
+        :rtype: None
+        """
+
+        buttons = self.bakeTypeButtonGroup.buttons()
+        numButtons = len(buttons)
+
+        if 0 <= bakeType < numButtons:
+
+            buttons[bakeType].click()
 
     def animationRange(self):
         """
@@ -393,10 +449,14 @@ class QLoopTab(qabstracttab.QAbstractTab):
         startFrame, endFrame = animationRange
 
         startTime = om.MTime(startFrame, unit=om.MTime.uiUnit())
-        animCurve.insertKey(startTime, change=change)
+        startIndex = animCurve.insertKey(startTime, change=change)
+        animCurve.setInTangentType(startIndex, oma.MFnAnimCurve.kTangentFixed, change=change)
+        animCurve.setOutTangentType(startIndex, oma.MFnAnimCurve.kTangentFixed, change=change)
 
         endTime = om.MTime(endFrame, unit=om.MTime.uiUnit())
-        animCurve.insertKey(endTime, change=change)
+        endIndex = animCurve.insertKey(endTime, change=change)
+        animCurve.setInTangentType(endIndex, oma.MFnAnimCurve.kTangentFixed, change=change)
+        animCurve.setOutTangentType(endIndex, oma.MFnAnimCurve.kTangentFixed, change=change)
 
     def removeOutOfRangeKeys(self, animCurve, animationRange, change=None):
         """
@@ -422,10 +482,10 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
                 continue
 
-    @undo(name='Bake Infinity Curves')
-    def bakeInfinityCurves(self, nodes, loopRange):
+    @undo(name='Bake Range')
+    def bakeRange(self, nodes, loopRange):
         """
-        Bakes the infinity animation curves on the supplied nodes.
+        Bakes the specified loop-range to the rest of the animation-range.
 
         :type nodes: List[mpynode.MPyNode]
         :type loopRange: Tuple[int, int]
@@ -495,6 +555,81 @@ class QLoopTab(qabstracttab.QAbstractTab):
         # Cache changes
         #
         commit(change.redoIt, change.undoIt)
+
+    @undo(name='Bake Out-Of-Range')
+    def bakeOutOfRange(self, nodes, animationRange):
+        """
+        Bakes the infinity curves inside the specified animation-range.
+
+        :type nodes: List[mpynode.MPyNode]
+        :type animationRange: Tuple[int, int]
+        :rtype: None
+        """
+
+        # Iterate through nodes
+        #
+        animationRange = animationRange if not stringutils.isNullOrEmpty(animationRange) else self.scene.animationRange
+        change = oma.MAnimCurveChange()
+
+        for node in nodes:
+
+            # Iterate through channel-box plugs
+            #
+            for plug in node.iterPlugs(channelBox=True, skipUserAttributes=self.skipCustomAttributes):
+
+                # Check if plug is animated
+                #
+                animCurve = node.findAnimCurve(plug, create=False)
+
+                if animCurve is None:
+
+                    continue
+
+                # Check if anim-curve has enough inputs
+                #
+                keyframes = animCurve.getInfinityKeys(animationRange, alignEndTangents=self.alignEndTangents)
+                numKeyframes = len(keyframes)
+
+                if not (numKeyframes >= 2):
+
+                    continue
+
+                # Iterate through keyframes
+                #
+                for keyframe in keyframes:
+
+                    # Add keyframe
+                    #
+                    time = om.MTime(keyframe.time, unit=om.MTime.uiUnit())
+
+                    index = animCurve.addKey(
+                        time,
+                        keyframe.value,
+                        tangentInType=animCurve.kTangentAuto,
+                        tangentOutType=animCurve.kTangentAuto,
+                        change=change
+                    )
+
+                    # Update tangent handles
+                    #
+                    animCurve.setInTangentType(index, keyframe.inTangentType, change=change)
+                    animCurve.setOutTangentType(index, keyframe.outTangentType, change=change)
+
+                    if oma.MFnAnimCurve.kTangentFixed in (keyframe.inTangentType, keyframe.outTangentType):
+
+                        animCurve.setTangentsLocked(index, False, change=change)
+                        animCurve.setTangent(index, keyframe.inTangent.x, keyframe.inTangent.y, True, convertUnits=False, change=change)
+                        animCurve.setTangent(index, keyframe.outTangent.x, keyframe.outTangent.y, False, convertUnits=False, change=change)
+                        animCurve.setTangentsLocked(index, True, change=change)
+
+                # Cleanup keys outside animation range
+                #
+                self.ensureLoopable(animCurve, animationRange, change=change)
+                self.removeOutOfRangeKeys(animCurve, animationRange, change=change)
+
+        # Cache changes
+        #
+        commit(change.redoIt, change.undoIt)
     # endregion
 
     # region Slots
@@ -546,10 +681,29 @@ class QLoopTab(qabstracttab.QAbstractTab):
         nodes = self.scene.selection(apiType=om.MFn.kTransform)
         self.alignTangents(*nodes)
 
+    @QtCore.Slot(int)
+    def on_bakeTypeButtonGroup_idClicked(self, id):
+        """
+        Slot method for the bakeTypeButtonGroup's `idClicked` signal.
+
+        :type id: int
+        :rtype: None
+        """
+
+        numLabels = len(self.__labels__)
+
+        if 0 <= id < numLabels:
+
+            self.bakeLabel.setText(self.__labels__[id])
+
+        else:
+
+            self.bakeLabel.setText('')
+
     @QtCore.Slot(bool)
     def on_bakePushButton_clicked(self, checked=False):
         """
-        Slot method for the applyPushButton's `clicked` signal.
+        Slot method for the bakePushButton's `clicked` signal.
 
         :type checked: bool
         :rtype: None
@@ -558,5 +712,17 @@ class QLoopTab(qabstracttab.QAbstractTab):
         nodes = self.scene.selection(apiType=om.MFn.kTransform)
         animationRange = self.animationRange()
 
-        self.bakeInfinityCurves(nodes, animationRange)
+        bakeType = self.bakeType()
+
+        if bakeType == BakeType.RANGE:
+
+            self.bakeRange(nodes, animationRange)
+
+        elif bakeType == BakeType.OUT_OF_RANGE:
+
+            self.bakeOutOfRange(nodes, animationRange)
+
+        else:
+
+            pass
     # endregion
