@@ -1666,6 +1666,7 @@ class PoseAnimLayer(psonobject.PSONObject):
 
     # region Dunderscores
     __slots__ = (
+        '_pose',
         '_name',
         '_parent',
         '_children',
