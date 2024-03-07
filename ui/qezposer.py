@@ -187,8 +187,6 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        self.invalidateNamespaces()
-
         for tab in self.iterTabs():
 
             tab.sceneChanged()
@@ -279,6 +277,8 @@ class QEzPoser(quicwindow.QUicWindow):
                 self.namespaceSeparator
             ]
         )
+
+        self.settingsMenu.aboutToShow.connect(self.on_settingsMenu_aboutToShow)
 
         # Add help menu actions
         #
@@ -606,7 +606,7 @@ class QEzPoser(quicwindow.QUicWindow):
         # Check if custom namespace should be appended
         #
         namespaces = ['']
-        namespaces.extend(om.MNamespace.getNamespaces(recurse=True))
+        namespaces.extend(om.MNamespace.getNamespaces(parentNamespace=':', recurse=True))
 
         if cls.__namespace__ not in namespaces:
 
@@ -727,6 +727,16 @@ class QEzPoser(quicwindow.QUicWindow):
         else:
 
             log.info('Operation aborted.')
+
+    @QtCore.Slot()
+    def on_settingsMenu_aboutToShow(self):
+        """
+        Slot method for the settingsMenu's `aboutToShow` signal.
+
+        :rtype: None
+        """
+
+        self.invalidateNamespaces()
 
     @QtCore.Slot(bool)
     def on_namespaceAction_triggered(self, checked=False):
