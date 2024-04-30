@@ -43,17 +43,17 @@
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Applies the selected pose/animation, relative, to the current target.</string>
@@ -74,6 +74,9 @@
       </item>
       <item row="2" column="0" colspan="2">
        <widget class="QSlider" name="applyPoseSlider">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Blends the selected nodes towards the selected pose.</string>
         </property>
@@ -110,6 +113,9 @@
           <width>0</width>
           <height>50</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="contextMenuPolicy">
          <enum>Qt::CustomContextMenu</enum>
@@ -151,6 +157,9 @@
           <height>24</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="toolTip">
          <string>Current working directory.</string>
         </property>
@@ -167,17 +176,17 @@
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Applies the selected pose/animation onto the active selection.</string>
@@ -213,11 +222,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Selects all visible controls.</string>
@@ -235,11 +253,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Selects all controls.</string>
@@ -257,11 +284,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Selects controls in the same display layer.</string>
@@ -279,11 +315,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Selects the opposite controls.</string>
@@ -325,14 +370,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Holds the transform matrices from the selected nodes.</string>
@@ -363,14 +414,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Copies a pose to the clipboard.</string>
@@ -388,14 +445,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Pastes the pose from the clipboard.</string>
@@ -410,13 +473,19 @@
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
           <horstretch>0</horstretch>
-          <verstretch>20</verstretch>
+          <verstretch>0</verstretch>
          </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
         </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_5">
@@ -438,16 +507,25 @@
          <item>
           <widget class="QPushButton" name="leftFetchTransformPushButton">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>20</width>
+             <width>24</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="text">
             <string>&lt;</string>
@@ -457,13 +535,13 @@
          <item>
           <widget class="QPushButton" name="fetchTransformPushButton">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Fetches the transform matrices and applies it to the selected node.</string>
@@ -479,16 +557,25 @@
          <item>
           <widget class="QPushButton" name="rightFetchTransformPushButton">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="minimumSize">
+            <size>
+             <width>24</width>
+             <height>0</height>
+            </size>
+           </property>
            <property name="maximumSize">
             <size>
-             <width>20</width>
+             <width>24</width>
              <height>16777215</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="text">
             <string>&gt;</string>
@@ -506,14 +593,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="text">
          <string>Reset Pose</string>
@@ -577,14 +670,17 @@
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>20</height>
+             <height>24</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>20</height>
+             <height>24</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="layoutDirection">
             <enum>Qt::RightToLeft</enum>
@@ -621,14 +717,17 @@
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>20</height>
+             <height>24</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>20</height>
+             <height>24</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="layoutDirection">
             <enum>Qt::RightToLeft</enum>
@@ -665,14 +764,17 @@
            <property name="minimumSize">
             <size>
              <width>0</width>
-             <height>20</height>
+             <height>24</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>16777215</width>
-             <height>20</height>
+             <height>24</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="layoutDirection">
             <enum>Qt::RightToLeft</enum>
@@ -706,14 +808,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="text">
          <string>Zero Pose</string>
@@ -737,14 +845,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Pulls the pose from the opposite nodes.</string>
@@ -762,14 +876,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Pulls the animation from the opposite nodes.</string>
@@ -787,14 +907,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Mirrors the animation to the opposite nodes.</string>
@@ -812,14 +938,20 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="toolTip">
          <string>Mirrors the pose to the opposite nodes.</string>
@@ -837,10 +969,16 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>24</height>
+         </size>
+        </property>
         <property name="maximumSize">
          <size>
           <width>16777215</width>
-          <height>20</height>
+          <height>24</height>
          </size>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout">
@@ -885,6 +1023,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -902,7 +1043,7 @@
                </sizepolicy>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="prefix">
                <string>Start: </string>
@@ -947,6 +1088,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -964,7 +1108,7 @@
                </sizepolicy>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="prefix">
                <string>End: </string>
@@ -1012,6 +1156,9 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -1029,7 +1176,7 @@
                </sizepolicy>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="prefix">
                <string>Insert: </string>

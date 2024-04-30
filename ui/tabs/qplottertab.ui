@@ -40,10 +40,16 @@
           <height>24</height>
          </size>
         </property>
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
        </widget>
       </item>
       <item>
        <widget class="QTreeView" name="guideTreeView">
+        <property name="focusPolicy">
+         <enum>Qt::NoFocus</enum>
+        </property>
         <property name="styleSheet">
          <string notr="true">QTreeView::item { height: 20px; }</string>
         </property>
@@ -91,7 +97,7 @@
             </size>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Removes the selected guide.</string>
@@ -116,7 +122,7 @@
             </size>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Creates a new guide from the active selection.</string>
@@ -141,7 +147,7 @@
             </size>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Imports a guide from a local file.</string>
@@ -166,7 +172,7 @@
             </size>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Exports the selected guide.</string>
@@ -283,6 +289,9 @@
                 <height>20</height>
                </size>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -306,7 +315,7 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::NoFocus</enum>
               </property>
               <property name="toolTip">
                <string>The start frame to sample from.</string>
@@ -394,6 +403,9 @@
                 <height>20</height>
                </size>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -417,7 +429,7 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::NoFocus</enum>
               </property>
               <property name="toolTip">
                <string>The end frame to sample to.</string>
@@ -478,6 +490,9 @@
              <height>20</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Bakes the transforms at the specified step interval.</string>
            </property>
@@ -502,6 +517,9 @@
              <width>16777215</width>
              <height>20</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Bakes the transforms to the original keys.</string>
@@ -562,6 +580,9 @@
                 <height>20</height>
                </size>
               </property>
+              <property name="focusPolicy">
+               <enum>Qt::NoFocus</enum>
+              </property>
               <property name="text">
                <string/>
               </property>
@@ -585,7 +606,7 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::NoFocus</enum>
               </property>
               <property name="toolTip">
                <string>The step interval to bake transforms to.</string>
@@ -623,6 +644,9 @@
              <width>16777215</width>
              <height>20</height>
             </size>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Specifies if any fractional frames should be rounded to the nearest whole number.</string>
@@ -696,6 +720,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Translate</string>
            </property>
@@ -725,6 +752,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="text">
             <string>Rotate</string>
            </property>
@@ -753,6 +783,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="text">
             <string>Scale</string>
@@ -793,7 +826,7 @@
       </size>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Plot</string>

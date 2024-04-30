@@ -101,6 +101,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -126,6 +129,9 @@
              <height>24</height>
             </size>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Opens a dialog to change the source FBX file.</string>
            </property>
@@ -133,7 +139,7 @@
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="../../../../../Python/dcc/ui/resources.qrc">
+            <iconset resource="../../../dcc/ui/resources.qrc">
              <normaloff>:/dcc/icons/open_folder.svg</normaloff>:/dcc/icons/open_folder.svg</iconset>
            </property>
           </widget>
@@ -183,7 +189,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Unloads the referenced FBX data.</string>
@@ -208,7 +214,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Loads the referenced FBX data.</string>
@@ -337,7 +343,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>The referenced rig that the animation will be retargeted to.</string>
@@ -420,7 +426,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>The binder used to remap data onto the selected rig.</string>
@@ -503,7 +509,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
+            <enum>Qt::ClickFocus</enum>
            </property>
            <property name="toolTip">
             <string>The frame to start baking.</string>
@@ -534,7 +540,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
+            <enum>Qt::ClickFocus</enum>
            </property>
            <property name="toolTip">
             <string>The frame to stop baking.</string>
@@ -568,7 +574,7 @@
             </sizepolicy>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::StrongFocus</enum>
+            <enum>Qt::ClickFocus</enum>
            </property>
            <property name="toolTip">
             <string>The frame interval to bake at.</string>
@@ -659,6 +665,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
+           </property>
            <property name="toolTip">
             <string>Maps the animation onto the FK controls.</string>
            </property>
@@ -674,6 +683,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Maps the animation onto the IK controls.</string>
@@ -693,6 +705,9 @@
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
+           </property>
+           <property name="focusPolicy">
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="toolTip">
             <string>Maps the animation onto the FK and IK controls (Not recommended for hybrid systems).</string>
@@ -803,13 +818,13 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::ClickFocus</enum>
+               <enum>Qt::NoFocus</enum>
               </property>
               <property name="text">
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../../../../../Python/dcc/ui/resources.qrc">
+               <iconset resource="../../../dcc/ui/resources.qrc">
                 <normaloff>:/dcc/icons/add.svg</normaloff>:/dcc/icons/add.svg</iconset>
               </property>
              </widget>
@@ -835,13 +850,13 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::ClickFocus</enum>
+               <enum>Qt::NoFocus</enum>
               </property>
               <property name="text">
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="../../../../../Python/dcc/ui/resources.qrc">
+               <iconset resource="../../../dcc/ui/resources.qrc">
                 <normaloff>:/dcc/icons/remove.svg</normaloff>:/dcc/icons/remove.svg</iconset>
               </property>
              </widget>
@@ -854,6 +869,9 @@
       </item>
       <item>
        <widget class="QListWidget" name="fileListWidget">
+        <property name="focusPolicy">
+         <enum>Qt::ClickFocus</enum>
+        </property>
         <property name="styleSheet">
          <string notr="true">QListWidget::item { height: 24px; }</string>
         </property>
@@ -943,6 +961,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -969,13 +990,13 @@
             </size>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="text">
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="../../../../../Python/dcc/ui/resources.qrc">
+            <iconset resource="../../../dcc/ui/resources.qrc">
              <normaloff>:/dcc/icons/open_folder.svg</normaloff>:/dcc/icons/open_folder.svg</iconset>
            </property>
           </widget>
@@ -1052,6 +1073,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="focusPolicy">
+            <enum>Qt::ClickFocus</enum>
+           </property>
            <property name="readOnly">
             <bool>true</bool>
            </property>
@@ -1078,13 +1102,13 @@
             </size>
            </property>
            <property name="focusPolicy">
-            <enum>Qt::ClickFocus</enum>
+            <enum>Qt::NoFocus</enum>
            </property>
            <property name="text">
             <string/>
            </property>
            <property name="icon">
-            <iconset resource="../../../../../Python/dcc/ui/resources.qrc">
+            <iconset resource="../../../dcc/ui/resources.qrc">
              <normaloff>:/dcc/icons/open_folder.svg</normaloff>:/dcc/icons/open_folder.svg</iconset>
            </property>
           </widget>
@@ -1114,7 +1138,7 @@
          </size>
         </property>
         <property name="focusPolicy">
-         <enum>Qt::ClickFocus</enum>
+         <enum>Qt::NoFocus</enum>
         </property>
         <property name="text">
          <string>Batch</string>
@@ -1146,7 +1170,7 @@
       </size>
      </property>
      <property name="focusPolicy">
-      <enum>Qt::ClickFocus</enum>
+      <enum>Qt::NoFocus</enum>
      </property>
      <property name="text">
       <string>Retarget</string>
@@ -1169,7 +1193,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="../../../../../Python/dcc/ui/resources.qrc"/>
+  <include location="../../../dcc/ui/resources.qrc"/>
  </resources>
  <connections/>
 </ui>
