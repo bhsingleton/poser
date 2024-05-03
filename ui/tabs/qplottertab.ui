@@ -315,7 +315,7 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="toolTip">
                <string>The start frame to sample from.</string>
@@ -429,7 +429,7 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="toolTip">
                <string>The end frame to sample to.</string>
@@ -606,7 +606,7 @@
                </size>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::NoFocus</enum>
+               <enum>Qt::ClickFocus</enum>
               </property>
               <property name="toolTip">
                <string>The step interval to bake transforms to.</string>
