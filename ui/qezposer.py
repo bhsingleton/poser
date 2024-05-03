@@ -193,23 +193,6 @@ class QEzPoser(quicwindow.QUicWindow):
     # endregion
 
     # region Events
-    def showEvent(self, event):
-        """
-        Event method called after the window has been shown.
-
-        :type event: QtGui.QShowEvent
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QEzPoser, self).showEvent(event)
-
-        # Add scene callback
-        #
-        self._callbackId = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneChanged)
-        self.sceneChanged()
-
     def closeEvent(self, event):
         """
         Event method called after the window has been closed.
@@ -287,6 +270,11 @@ class QEzPoser(quicwindow.QUicWindow):
         self.usingEzPoserAction.triggered.connect(self.on_usingEzPoserAction_triggered)
 
         self.helpMenu.addAction(self.usingEzPoserAction)
+
+        # Register scene change callback
+        #
+        self._callbackId = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneChanged)
+        self.sceneChanged()
 
     def loadSettings(self, settings):
         """
