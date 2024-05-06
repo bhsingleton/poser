@@ -89,6 +89,7 @@ class QEzPoser(quicwindow.QUicWindow):
     __scene__ = None
     __configurations__ = []
     __configuration__ = None
+    __axis_vectors__ = (om.MVector.kXaxisVector, om.MVector.kYaxisVector, om.MVector.kZaxisVector)
     __namespace__ = ''
 
     @classmethod
@@ -147,6 +148,12 @@ class QEzPoser(quicwindow.QUicWindow):
         self.settingsMenu = None
         self.changeRigConfigurationAction = None
         self.rigConfigurationAction = None
+        self.mirrorAxisSection = None
+        self.xAxisAction = None
+        self.yAxisAction = None
+        self.zAxisAction = None
+        self.mirrorAxisActionGroup = None
+        self.detectMirroringAction = None
         self.namespaceSection = None
         self.defaultNamespaceAction = None
         self.namespaceActionGroup = None
@@ -240,13 +247,41 @@ class QEzPoser(quicwindow.QUicWindow):
         self.changeRigConfigurationAction.setObjectName('changeRigConfigurationAction')
         self.changeRigConfigurationAction.triggered.connect(self.on_changeRigConfigurationAction_triggered)
 
-        self.namespaceActionGroup = QtWidgets.QActionGroup(self.settingsMenu)
-        self.namespaceActionGroup.setObjectName('namespaceActionGroup')
-        self.namespaceActionGroup.setExclusive(True)
+        self.mirrorAxisSection = QtWidgets.QAction('Mirroring:', parent=self.settingsMenu)
+        self.mirrorAxisSection.setObjectName('axisSection')
+        self.mirrorAxisSection.setSeparator(True)
+
+        self.xAxisAction = QtWidgets.QAction('X', parent=self.settingsMenu)
+        self.xAxisAction.setObjectName('xAxisAction')
+        self.xAxisAction.setCheckable(True)
+        self.xAxisAction.setChecked(True)
+
+        self.yAxisAction = QtWidgets.QAction('Y', parent=self.settingsMenu)
+        self.yAxisAction.setObjectName('yAxisAction')
+        self.yAxisAction.setCheckable(True)
+
+        self.zAxisAction = QtWidgets.QAction('Z', parent=self.settingsMenu)
+        self.zAxisAction.setObjectName('zAxisAction')
+        self.zAxisAction.setCheckable(True)
+
+        self.mirrorAxisActionGroup = QtWidgets.QActionGroup(self.settingsMenu)
+        self.mirrorAxisActionGroup.setObjectName('mirrorAxisActionGroup')
+        self.mirrorAxisActionGroup.setExclusive(True)
+        self.mirrorAxisActionGroup.addAction(self.xAxisAction)
+        self.mirrorAxisActionGroup.addAction(self.yAxisAction)
+        self.mirrorAxisActionGroup.addAction(self.zAxisAction)
+
+        self.detectMirroringAction = QtWidgets.QAction('Detect Mirroring', parent=self.settingsMenu)
+        self.detectMirroringAction.setObjectName('zAxisAction')
+        self.detectMirroringAction.triggered.connect(self.on_detectMirroringAction_triggered)
 
         self.namespaceSection = QtWidgets.QAction('Namespaces:', parent=self.settingsMenu)
         self.namespaceSection.setObjectName('namespaceSection')
         self.namespaceSection.setSeparator(True)
+
+        self.namespaceActionGroup = QtWidgets.QActionGroup(self.settingsMenu)
+        self.namespaceActionGroup.setObjectName('namespaceActionGroup')
+        self.namespaceActionGroup.setExclusive(True)
 
         self.namespaceSeparator = QtWidgets.QAction('', parent=self.settingsMenu)
         self.namespaceSeparator.setObjectName('namespaceSeparator')
@@ -256,6 +291,11 @@ class QEzPoser(quicwindow.QUicWindow):
             [
                 self.rigConfigurationAction,
                 self.changeRigConfigurationAction,
+                self.mirrorAxisSection,
+                self.xAxisAction,
+                self.yAxisAction,
+                self.zAxisAction,
+                self.detectMirroringAction,
                 self.namespaceSection,
                 self.namespaceSeparator
             ]
@@ -293,6 +333,7 @@ class QEzPoser(quicwindow.QUicWindow):
         self.tabControl.setCurrentIndex(settings.value('editor/currentTabIndex', defaultValue=0))
         self.setCwd(settings.value('editor/cwd', defaultValue=self.scene.projectPath))
         self.setCurrentConfiguration(settings.value('editor/currentConfiguration', defaultValue=-1))
+        self.setCurrentAxis(settings.value('editor/currentAxis', defaultValue=0))
 
         # Load tab settings
         #
@@ -317,6 +358,7 @@ class QEzPoser(quicwindow.QUicWindow):
         settings.setValue('editor/currentTabIndex', self.currentTabIndex())
         settings.setValue('editor/cwd', self.cwd())
         settings.setValue('editor/currentConfiguration', self.configurations.index(self.currentConfiguration()))
+        settings.setValue('editor/currentAxis', self.currentAxis())
         settings.setValue('editor/customNamespace', self.currentNamespace())
 
         # Save tab settings
@@ -395,6 +437,32 @@ class QEzPoser(quicwindow.QUicWindow):
 
             self._cwd = os.path.normpath(cwd)
             self.cwdChanged.emit(self._cwd)
+
+    def currentAxis(self):
+        """
+        Returns the current mirror axis.
+
+        :rtype: int
+        """
+
+        actions = self.mirrorAxisActionGroup.actions()
+        checkedAction = self.mirrorAxisActionGroup.checkedAction()
+        index = actions.index(checkedAction)
+
+        return index
+
+    def setCurrentAxis(self, axis):
+        """
+        Updates the current mirror axis.
+
+        :type axis: int
+        :rtype: None
+        """
+
+        actions = self.mirrorAxisActionGroup.actions()
+        action = actions[axis]
+
+        action.setChecked(True)
 
     @classmethod
     def currentNamespace(cls):
@@ -717,9 +785,24 @@ class QEzPoser(quicwindow.QUicWindow):
             log.info('Operation aborted.')
 
     @QtCore.Slot()
+    def on_detectMirroringAction_triggered(self):
+        """
+        Slot method for the `detectMirroringAction` widget's `triggered` signal.
+
+        :rtype: None
+        """
+
+        axis = self.currentAxis()
+        normal = self.__axis_vectors__[axis]
+
+        for control in self.iterControls():
+
+            control.detectMirroring(normal=normal)
+
+    @QtCore.Slot()
     def on_settingsMenu_aboutToShow(self):
         """
-        Slot method for the settingsMenu's `aboutToShow` signal.
+        Slot method for the `settingsMenu` widget's `aboutToShow` signal.
 
         :rtype: None
         """
@@ -729,7 +812,7 @@ class QEzPoser(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_namespaceAction_triggered(self, checked=False):
         """
-        Slot method for the changeNamespaceAction's `triggered` signal.
+        Slot method for the `namespaceAction` widget's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -740,7 +823,7 @@ class QEzPoser(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_changeRigConfigurationAction_triggered(self, checked=False):
         """
-        Slot method for the changeRigConfigurationAction's `triggered` signal.
+        Slot method for the `changeRigConfigurationAction` widget's `triggered` signal.
 
         :type checked: bool
         :rtype: None
@@ -772,7 +855,7 @@ class QEzPoser(quicwindow.QUicWindow):
     @QtCore.Slot(bool)
     def on_usingEzPoserAction_triggered(self, checked=False):
         """
-        Slot method for the usingEzPoser's `triggered` signal.
+        Slot method for the `usingEzPoserAction` widget's `triggered` signal.
 
         :type checked: bool
         :rtype: None
