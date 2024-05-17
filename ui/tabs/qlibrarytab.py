@@ -234,7 +234,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.insertTimeSpinBox.setObjectName('insertTimeSpinBox')
         self.insertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         self.insertTimeSpinBox.setDefaultType(self.insertTimeSpinBox.DefaultType.CurrentTime)
-        self.insertTimeSpinBox.setRange(-9999, 9999)
+        self.insertTimeSpinBox.setRange(-9999999, 9999999)
         self.insertTimeSpinBox.setValue(self.scene.startTime)
         self.insertTimeSpinBox.setPrefix('Insert At: ')
         self.insertTimeSpinBox.setEnabled(False)
