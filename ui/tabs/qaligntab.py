@@ -726,22 +726,32 @@ class QAlignTab(qabstracttab.QAbstractTab):
         #
         self.clearAlignments()
 
-        # Load alignment states
-        # If there aren't any then create a default alignment
+        # Try and load alignments from scene properties
         #
-        states = json.loads(self.scene.properties.get('alignments', '[]'))
-        numStates = len(states)
+        states = []
 
-        if numStates > 0:
+        try:
 
-            for state in states:
+            states = json.loads(self.scene.properties.get('alignments', '[]'))
 
-                alignment = self.addAlignment()
-                alignment.__setstate__(state)
+        except json.JSONDecodeError as exception:
 
-        else:
+            log.warning(exception)
 
-            self.addAlignment()
+        finally:
+
+            numStates = len(states)
+
+            if numStates > 0:
+
+                for state in states:
+
+                    alignment = self.addAlignment()
+                    alignment.__setstate__(state)
+
+            else:
+
+                self.addAlignment()
     # endregion
 
     # region Methods
