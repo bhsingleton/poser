@@ -9,6 +9,7 @@ from dcc.dataclasses import keyframe
 from dcc.collections import notifylist, notifydict
 from dcc.generators.inclusiverange import inclusiveRange
 from dcc.maya.libs import plugutils, plugmutators, transformutils, animutils
+from dcc.maya.json import melsonobject
 from dcc.maya.decorators.animate import animate
 
 import logging
@@ -17,9 +18,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class Pose(psonobject.PSONObject):
+class Pose(melsonobject.MELSONObject):
     """
-    Overload of `PSONObject` that interfaces with pose data.
+    Overload of `MELSONObject` that interfaces with pose data.
     """
 
     # region Dunderscores
@@ -488,6 +489,7 @@ class Pose(psonobject.PSONObject):
         # Evaluate bake method
         #
         preserveKeys = kwargs.get('preserveKeys', False)
+        preserveTangents = kwargs.get('preserveTangents', False)
 
         animationRange = kwargs.get('animationRange', self.animationRange)
         startTime, endTime = animationRange
@@ -617,9 +619,11 @@ class Pose(psonobject.PSONObject):
         # Check if anim layers should be added
         #
         baseLayer = animutils.getBaseAnimLayer()
+        hasBaseLayer = not baseLayer.isNull()
+
         skipLayers = kwargs.get('skipLayers', True)
 
-        if not skipLayers and not baseLayer.isNull():
+        if not skipLayers and hasBaseLayer:
 
             instance.animLayers = [PoseAnimLayer.create(mpynode.MPyNode(baseLayer), nodes=nodes)]
 
@@ -627,9 +631,9 @@ class Pose(psonobject.PSONObject):
     # endregion
 
 
-class PoseNode(psonobject.PSONObject):
+class PoseNode(melsonobject.MELSONObject):
     """
-    Overload of `PSONObject` that interfaces with pose nodes.
+    Overload of `MELSONObject` that interfaces with pose nodes.
     """
 
     # region Dunderscores
@@ -862,23 +866,6 @@ class PoseNode(psonobject.PSONObject):
     # endregion
 
     # region Methods
-    @classmethod
-    def isJsonCompatible(cls, T):
-        """
-        Evaluates whether the given type is json compatible.
-
-        :type T: Union[Callable, Tuple[Callable]]
-        :rtype: bool
-        """
-
-        if T.__module__ == 'OpenMaya':
-
-            return True
-
-        else:
-
-            return super(PoseNode, cls).isJsonCompatible(T)
-
     def getAttributeByName(self, name):
         """
         Returns the pose attribute with the specified name.
@@ -1204,9 +1191,9 @@ class PoseNode(psonobject.PSONObject):
     # endregion
 
 
-class PoseAttribute(psonobject.PSONObject):
+class PoseAttribute(melsonobject.MELSONObject):
     """
-    Overload of `PSONObject` that interfaces with pose attributes.
+    Overload of `MELSONObject` that interfaces with pose attributes.
     """
 
     # region Dunderscores
@@ -1431,13 +1418,14 @@ class PoseAttribute(psonobject.PSONObject):
     # endregion
 
 
-class PoseMember(psonobject.PSONObject):
+class PoseMember(melsonobject.MELSONObject):
     """
-    Overload of `PSONObject` that interfaces with pose member data.
+    Overload of `MELSONObject` that interfaces with pose member data.
     """
 
     # region Dunderscores
     __slots__ = (
+        '_animLayer',
         '_name',
         '_attribute',
         '_value',
@@ -1461,7 +1449,7 @@ class PoseMember(psonobject.PSONObject):
         # Declare private variables
         #
         self._animLayer = self.nullWeakReference
-        self._node = kwargs.get('node', '')
+        self._name = kwargs.get('name', '')
         self._attribute = kwargs.get('attribute', '')
         self._value = kwargs.get('value', 0.0)
         self._preInfinityType = kwargs.get('preInfinityType', 0)
@@ -1645,27 +1633,38 @@ class PoseMember(psonobject.PSONObject):
         attribute = plug.partialName(useLongNames=True)
         value = plugmutators.getValue(plug),
 
+        preInfinityType, postInfinityType = 0, 0
+        weighted = False
+        keyframes = []
+
+        if animCurve is not None:
+
+            preInfinityType, postInfinityType = animCurve.preInfinity, animCurve.postInfinity
+            weighted = animCurve.isWeighted
+            keyframes = animCurve.getKeys()
+
         instance = cls(
             node=node.name(),
             attribute=attribute,
             value=value,
-            preInfinityType=animCurve.preInfinity,
-            postInfinityType=animCurve.postInfinity,
-            weighted=animCurve.isWeighted,
-            keyframes=animCurve.getKeys()
+            preInfinityType=preInfinityType,
+            postInfinityType=postInfinityType,
+            weighted=weighted,
+            keyframes=keyframes
         )
 
         return instance
     # endregion
 
 
-class PoseAnimLayer(psonobject.PSONObject):
+class PoseAnimLayer(melsonobject.MELSONObject):
     """
-    Overload of `PSONObject` that interfaces with pose anim layer data.
+    Overload of `MELSONObject` that interfaces with pose anim layer data.
     """
 
     # region Dunderscores
     __slots__ = (
+        '__weakref__',
         '_pose',
         '_name',
         '_parent',
@@ -1720,7 +1719,7 @@ class PoseAnimLayer(psonobject.PSONObject):
 
         self._members.addCallback('itemAdded', self.memberAdded)
         self._members.addCallback('itemRemoved', self.memberRemoved)
-        self._members.update(kwargs.get('members', []))
+        self._members.extend(kwargs.get('members', []))
     # endregion
 
     # region Properties
