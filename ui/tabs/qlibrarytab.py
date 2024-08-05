@@ -6,9 +6,9 @@ from maya.api import OpenMaya as om
 from Qt import QtCore, QtWidgets, QtGui
 from fnmatch import fnmatchcase
 from dcc.python import stringutils
-from dcc.ui import qrollout, qtimespinbox
+from dcc.ui import qdropdownbutton, qtimespinbox, qxyzwidget, qpersistentmenu, qdivider
 from dcc.ui.models import qfileitemmodel, qfileitemfiltermodel
-from dcc.maya.decorators.undo import undo
+from dcc.maya.decorators import undo
 from . import qabstracttab
 from ..dialogs import qaniminputdialog
 from ...libs import poseutils
@@ -47,95 +47,39 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self._poseClipboard = None
         self._matrixClipboard = None
 
-        # Declare public variables
-        #
-        self.libraryGroupBox = None
-        self.pathLineEdit = None
-        self.directoryAction = None
-        self.parentDirectoryAction = None
-        self.refreshDirectoryAction = None
-        self.fileListView = None
-        self.fileItemModel = None
-        self.fileItemFilterModel = None
-        self.applyPoseSlider = None
-        self.applyPosePushButton = None
-        self.applyRelativePosePushButton = None
-
-        self.createPoseMenu = None
-        self.selectControlsAction = None
-        self.selectVisibleControlsAction = None
-        self.addFolderAction = None
-        self.addPoseAction = None
-        self.addAnimationAction = None
-
-        self.editPoseMenu = None
-        self.selectAssociatedNodesAction = None
-        self.renameFileAction = None
-        self.updateFileAction = None
-        self.deleteFileAction = None
-        self.openInExplorerAction = None
-
-        self.applyPoseMenu = None
-        self.applyAnimActionGroup = None
-        self.insertAnimAction = None
-        self.replaceAnimAction = None
-        self.insertTimeSpinBox = None
-        self.insertTimeAction = None
-        self.applyRelativePoseMenu = None
-        self.relativeTargetAction = None
-        self.pickRelativeTargetAction = None
-
-        self.quickSelectGroupBox = None
-        self.selectVisiblePushButton = None
-        self.selectAllPushButton = None
-        self.selectAssociatedPushButton = None
-        self.selectOppositePushButton = None
-
-        self.quickPoseGroupBox = None
-        self.copyPosePushButton = None
-        self.pastePosePushButton = None
-        self.zeroPosePushButton = None
-        self.resetPosePushButton = None
-        self.holdTransformPushButton = None
-        self.fetchTransformPushButton = None
-        self.leftFetchTransformPushButton = None
-        self.rightFetchTransformPushButton = None
-        self.matchWidget = None
-        self.matchTranslateCheckBox = None
-        self.matchRotateCheckBox = None
-        self.matchScaleCheckBox = None
-        self.matchButtonGroup = None
-
-        self.quickMirrorGroupBox = None
-        self.mirrorPosePushButton = None
-        self.mirrorAnimationPushButton = None
-        self.pullAnimationPushButton = None
-        self.pullPosePushButton = None
-        self.mirrorStartTimeWidget = None
-        self.mirrorStartTimeCheckBox = None
-        self.mirrorStartTimeSpinBox = None
-        self.mirrorEndTimeWidget = None
-        self.mirrorEndTimeCheckBox = None
-        self.mirrorEndTimeSpinBox = None
-        self.mirrorTimeWidget = None
-        self.mirrorTimeCheckBox = None
-        self.mirrorTimeSpinBox = None
-    # endregion
-
-    # region Methods
-    def postLoad(self, *args, **kwargs):
+    def __setup_ui__(self, *args, **kwargs):
         """
-        Called after the user interface has been loaded.
+        Private method that initializes the user interface.
 
         :rtype: None
         """
 
-        # Call parent method
+        # Initialize central layout
         #
-        super(QLibraryTab, self).postLoad(*args, **kwargs)
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
 
-        # Initialize path actions
+        self.setLayout(centralLayout)
+
+        # Initialize library group-box
         #
+        self.libraryLayout = QtWidgets.QGridLayout()
+        self.libraryLayout.setObjectName('libraryLayout')
+
+        self.libraryGroupBox = QtWidgets.QGroupBox('')
+        self.libraryGroupBox.setObjectName('libraryGroupBox')
+        self.libraryGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.libraryGroupBox.setLayout(self.libraryLayout)
+
+        self.pathLineEdit = QtWidgets.QLineEdit()
+        self.pathLineEdit.setObjectName('pathLineEdit')
+        self.pathLineEdit.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.pathLineEdit.setFixedHeight(24)
+        self.pathLineEdit.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.pathLineEdit.setToolTip('Current working directory.')
+        self.pathLineEdit.textChanged.connect(self.on_pathLineEdit_textChanged)
+        self.pathLineEdit.editingFinished.connect(self.on_pathLineEdit_editingFinished)
+
         self.directoryAction = QtWidgets.QAction(QtGui.QIcon(':/qt-project.org/styles/commonstyle/images/dirclosed-16.png'), '', parent=self.pathLineEdit)
         self.directoryAction.setObjectName('directoryAction')
 
@@ -151,8 +95,22 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.pathLineEdit.addAction(self.refreshDirectoryAction, QtWidgets.QLineEdit.TrailingPosition)
         self.pathLineEdit.addAction(self.parentDirectoryAction, QtWidgets.QLineEdit.TrailingPosition)
 
-        # Initialize file item model
-        #
+        self.fileListView = QtWidgets.QListView()
+        self.fileListView.setObjectName('fileListView')
+        self.fileListView.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.fileListView.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.fileListView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.fileListView.setStyleSheet('QListView::item { height: 24px; }')
+        self.fileListView.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.fileListView.setDefaultDropAction(QtCore.Qt.IgnoreAction)
+        self.fileListView.setAlternatingRowColors(True)
+        self.fileListView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.fileListView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.fileListView.setUniformItemSizes(True)
+        self.fileListView.setItemAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        self.fileListView.doubleClicked.connect(self.on_fileListView_doubleClicked)
+        self.fileListView.customContextMenuRequested.connect(self.on_fileListView_customContextMenuRequested)
+
         self.fileItemModel = qfileitemmodel.QFileItemModel(cwd=self.cwd(), parent=self.fileListView)
         self.fileItemModel.setObjectName('fileItemModel')
 
@@ -162,12 +120,106 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.fileItemFilterModel.setSourceModel(self.fileItemModel)
 
         self.fileListView.setModel(self.fileItemFilterModel)
-        self.fileListView.selectionModel().selectionChanged.connect(self.on_fileListView_selectionChanged)
 
-        window = self.window()
-        window.cwdChanged.connect(self.fileItemModel.setCwd)
+        self.fileSelectionModel = self.fileListView.selectionModel()
+        self.fileSelectionModel.setObjectName('fileSelectionModel')
+        self.fileSelectionModel.selectionChanged.connect(self.on_fileListView_selectionChanged)
 
-        # Add "Create" menu actions
+        self.applyPoseSlider = QtWidgets.QSlider()
+        self.applyPoseSlider.setObjectName('applyPoseSlider')
+        self.applyPoseSlider.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.applyPoseSlider.setToolTip('Blends the selected nodes towards the selected pose.')
+        self.applyPoseSlider.setMinimum(0)
+        self.applyPoseSlider.setMaximum(100)
+        self.applyPoseSlider.setSingleStep(1)
+        self.applyPoseSlider.setOrientation(QtCore.Qt.Horizontal)
+        self.applyPoseSlider.setInvertedAppearance(False)
+        self.applyPoseSlider.setInvertedControls(False)
+        self.applyPoseSlider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.applyPoseSlider.setTickInterval(5)
+        self.applyPoseSlider.sliderPressed.connect(self.on_applyPoseSlider_sliderPressed)
+        self.applyPoseSlider.sliderMoved.connect(self.on_applyPoseSlider_sliderMoved)
+
+        self.applyPosePushButton = qdropdownbutton.QDropDownButton('Apply')
+        self.applyPosePushButton.setObjectName('applyPosePushButton')
+        self.applyPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.applyPosePushButton.setFixedHeight(24)
+        self.applyPosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.applyPosePushButton.setToolTip('Applies the selected pose/animation onto the active selection.')
+        self.applyPosePushButton.clicked.connect(self.on_applyPosePushButton_clicked)
+
+        self.applyRelativePosePushButton = qdropdownbutton.QDropDownButton('Apply Relative')
+        self.applyRelativePosePushButton.setObjectName('applyRelativePosePushButton')
+        self.applyRelativePosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.applyRelativePosePushButton.setFixedHeight(24)
+        self.applyRelativePosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.applyRelativePosePushButton.setToolTip('Applies the selected pose/animation, relative, to the current target.')
+        self.applyRelativePosePushButton.clicked.connect(self.on_applyRelativePosePushButton_clicked)
+
+        self.libraryLayout.addWidget(self.pathLineEdit, 0, 0, 1, 2)
+        self.libraryLayout.addWidget(self.fileListView, 1, 0, 1, 2)
+        self.libraryLayout.addWidget(self.applyPoseSlider, 2, 0, 1, 2)
+        self.libraryLayout.addWidget(self.applyPosePushButton, 3, 0)
+        self.libraryLayout.addWidget(self.applyRelativePosePushButton, 3, 1)
+
+        centralLayout.addWidget(self.libraryGroupBox)
+
+        # Initialize apply menu
+        #
+        self.applyPoseMenu = qpersistentmenu.QPersistentMenu(parent=self.applyPosePushButton)
+        self.applyPoseMenu.setObjectName('applyPoseMenu')
+
+        self.insertTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.applyPoseMenu)
+        self.insertTimeSpinBox.setObjectName('insertTimeSpinBox')
+        self.insertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.insertTimeSpinBox.setDefaultType(self.insertTimeSpinBox.DefaultType.CURRENT_TIME)
+        self.insertTimeSpinBox.setRange(-9999999, 9999999)
+        self.insertTimeSpinBox.setValue(self.scene.startTime)
+        self.insertTimeSpinBox.setPrefix('Insert At: ')
+        self.insertTimeSpinBox.setEnabled(False)
+
+        self.insertTimeAction = QtWidgets.QWidgetAction(self.applyPoseMenu)
+        self.insertTimeAction.setDefaultWidget(self.insertTimeSpinBox)
+
+        self.replaceAnimAction = QtWidgets.QAction('Replace')
+        self.replaceAnimAction.setObjectName('replaceAnimAction')
+        self.replaceAnimAction.setCheckable(True)
+        self.replaceAnimAction.setChecked(True)
+
+        self.insertAnimAction = QtWidgets.QAction('Insert')
+        self.insertAnimAction.setObjectName('insertAnimAction')
+        self.insertAnimAction.setCheckable(True)
+        self.insertAnimAction.setChecked(False)
+        self.insertAnimAction.toggled.connect(self.insertTimeSpinBox.setEnabled)
+
+        self.applyAnimActionGroup = QtWidgets.QActionGroup(self.applyPoseMenu)
+        self.applyAnimActionGroup.setObjectName('applyAnimActionGroup')
+        self.applyAnimActionGroup.setExclusive(True)
+        self.applyAnimActionGroup.addAction(self.replaceAnimAction)
+        self.applyAnimActionGroup.addAction(self.insertAnimAction)
+
+        self.applyPoseMenu.addActions([self.replaceAnimAction, self.insertAnimAction, self.insertTimeAction])
+
+        self.applyPosePushButton.setMenu(self.applyPoseMenu)
+
+        # Initialize apply-relative menu
+        #
+        self.applyRelativePoseMenu = qpersistentmenu.QPersistentMenu(parent=self.applyRelativePosePushButton)
+        self.applyRelativePoseMenu.setObjectName('applyRelativePoseMenu')
+
+        self.relativeTargetAction = QtWidgets.QAction('Target: None', parent=self.applyRelativePoseMenu)
+        self.relativeTargetAction.setObjectName('relativeTargetAction')
+        self.relativeTargetAction.setDisabled(True)
+
+        self.pickRelativeTargetAction = QtWidgets.QAction('Pick Relative Target', parent=self.applyRelativePoseMenu)
+        self.pickRelativeTargetAction.setObjectName('pickRelativeTargetAction')
+        self.pickRelativeTargetAction.triggered.connect(self.on_pickRelativeTargetAction_triggered)
+
+        self.applyRelativePoseMenu.addActions([self.relativeTargetAction, self.pickRelativeTargetAction])
+
+        self.applyRelativePosePushButton.setMenu(self.applyRelativePoseMenu)
+
+        # Initialize create-pose context menu
         #
         self.selectControlsAction = QtWidgets.QAction('Select Controls')
         self.selectControlsAction.setObjectName('selectControlsAction')
@@ -195,7 +247,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.createPoseMenu.addSeparator()
         self.createPoseMenu.addActions([self.addFolderAction, self.addPoseAction, self.addAnimationAction])
 
-        # Add "Edit" menu actions
+        # Initialize edit-pose context menu
         #
         self.selectAssociatedNodesAction = QtWidgets.QAction('Select Associated Nodes')
         self.selectAssociatedNodesAction.setObjectName('selectAssociatedNodesAction')
@@ -225,79 +277,325 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.editPoseMenu.addSeparator()
         self.editPoseMenu.addAction(self.openInExplorerAction)
 
-        # Add "Apply" menu actions
+        # Initialize quick-select group-box
         #
-        self.applyPoseMenu = QtWidgets.QMenu(parent=self.applyPosePushButton)
-        self.applyPoseMenu.setObjectName('applyPoseMenu')
+        self.quickSelectLayout = QtWidgets.QGridLayout()
+        self.quickSelectLayout.setObjectName('quickSelectLayout')
 
-        self.insertTimeSpinBox = qtimespinbox.QTimeSpinBox(parent=self.applyPoseMenu)
-        self.insertTimeSpinBox.setObjectName('insertTimeSpinBox')
-        self.insertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.insertTimeSpinBox.setDefaultType(self.insertTimeSpinBox.DefaultType.CurrentTime)
-        self.insertTimeSpinBox.setRange(-9999999, 9999999)
-        self.insertTimeSpinBox.setValue(self.scene.startTime)
-        self.insertTimeSpinBox.setPrefix('Insert At: ')
-        self.insertTimeSpinBox.setEnabled(False)
+        self.quickSelectGroupBox = QtWidgets.QGroupBox('Quick Select:')
+        self.quickSelectGroupBox.setObjectName('quickSelectGroupBox')
+        self.quickSelectGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+        self.quickSelectGroupBox.setLayout(self.quickSelectLayout)
 
-        self.insertTimeAction = QtWidgets.QWidgetAction(self.applyPoseMenu)
-        self.insertTimeAction.setDefaultWidget(self.insertTimeSpinBox)
+        self.selectVisiblePushButton = QtWidgets.QPushButton('Select Visible')
+        self.selectVisiblePushButton.setObjectName('selectVisiblePushButton')
+        self.selectVisiblePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.selectVisiblePushButton.setFixedHeight(24)
+        self.selectVisiblePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.selectVisiblePushButton.setToolTip('Selects all visible controls.')
+        self.selectVisiblePushButton.clicked.connect(self.on_selectVisiblePushButton_clicked)
 
-        self.replaceAnimAction = QtWidgets.QAction('Replace')
-        self.replaceAnimAction.setObjectName('replaceAnimAction')
-        self.replaceAnimAction.setCheckable(True)
-        self.replaceAnimAction.setChecked(True)
+        self.selectAllPushButton = QtWidgets.QPushButton('Select All')
+        self.selectAllPushButton.setObjectName('selectAllPushButton')
+        self.selectAllPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.selectAllPushButton.setFixedHeight(24)
+        self.selectAllPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.selectAllPushButton.setToolTip('Selects all visible controls.')
+        self.selectAllPushButton.clicked.connect(self.on_selectAllPushButton_clicked)
 
-        self.insertAnimAction = QtWidgets.QAction('Insert')
-        self.insertAnimAction.setObjectName('insertAnimAction')
-        self.insertAnimAction.setCheckable(True)
-        self.insertAnimAction.setChecked(False)
-        self.insertAnimAction.toggled.connect(self.insertTimeSpinBox.setEnabled)
+        self.selectAssociatedPushButton = QtWidgets.QPushButton('Select Associated')
+        self.selectAssociatedPushButton.setObjectName('selectAssociatedPushButton')
+        self.selectAssociatedPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.selectAssociatedPushButton.setFixedHeight(24)
+        self.selectAssociatedPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.selectAssociatedPushButton.setToolTip('Selects controls in the same display layer.')
+        self.selectAssociatedPushButton.clicked.connect(self.on_selectAssociatedPushButton_clicked)
 
-        self.applyAnimActionGroup = QtWidgets.QActionGroup(self.applyPoseMenu)
-        self.applyAnimActionGroup.setObjectName('applyAnimActionGroup')
-        self.applyAnimActionGroup.setExclusive(True)
-        self.applyAnimActionGroup.addAction(self.replaceAnimAction)
-        self.applyAnimActionGroup.addAction(self.insertAnimAction)
+        self.selectOppositePushButton = QtWidgets.QPushButton('Select Opposite')
+        self.selectOppositePushButton.setObjectName('selectOppositePushButton')
+        self.selectOppositePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.selectOppositePushButton.setFixedHeight(24)
+        self.selectOppositePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.selectOppositePushButton.setToolTip('Selects the opposite controls.')
+        self.selectOppositePushButton.clicked.connect(self.on_selectOppositePushButton_clicked)
 
-        self.applyPoseMenu.addActions([self.replaceAnimAction, self.insertAnimAction, self.insertTimeAction])
-        self.applyPosePushButton.setMenu(self.applyPoseMenu)
+        self.quickSelectLayout.addWidget(self.selectVisiblePushButton, 0, 0)
+        self.quickSelectLayout.addWidget(self.selectAllPushButton, 0, 1)
+        self.quickSelectLayout.addWidget(self.selectAssociatedPushButton, 1, 0)
+        self.quickSelectLayout.addWidget(self.selectOppositePushButton, 1, 1)
 
-        # Add "Apply Relative" menu actions
+        centralLayout.addWidget(self.quickSelectGroupBox)
+
+        # Initialize quick-pose group-box
         #
-        self.applyRelativePoseMenu = QtWidgets.QMenu(parent=self.applyRelativePosePushButton)
-        self.applyRelativePoseMenu.setObjectName('applyRelativePoseMenu')
+        self.quickPoseLayout = QtWidgets.QGridLayout()
+        self.quickPoseLayout.setObjectName('quickPoseLayout')
 
-        self.relativeTargetAction = QtWidgets.QAction('Target: None', parent=self.applyRelativePoseMenu)
-        self.relativeTargetAction.setObjectName('relativeTargetAction')
-        self.relativeTargetAction.setDisabled(True)
+        self.quickPoseGroupBox = QtWidgets.QGroupBox('Quick Pose:')
+        self.quickPoseGroupBox.setObjectName('quickPoseGroupBox')
+        self.quickPoseGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+        self.quickPoseGroupBox.setLayout(self.quickPoseLayout)
 
-        self.pickRelativeTargetAction = QtWidgets.QAction('Pick Relative Target', parent=self.applyRelativePoseMenu)
-        self.pickRelativeTargetAction.setObjectName('pickRelativeTargetAction')
-        self.pickRelativeTargetAction.triggered.connect(self.on_pickRelativeTargetAction_triggered)
+        self.copyPosePushButton = QtWidgets.QPushButton('Copy Pose')
+        self.copyPosePushButton.setObjectName('copyPosePushButton')
+        self.copyPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.copyPosePushButton.setFixedHeight(24)
+        self.copyPosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.copyPosePushButton.setToolTip('Copies a pose to the clipboard.')
+        self.copyPosePushButton.clicked.connect(self.on_copyPosePushButton_clicked)
 
-        self.applyRelativePoseMenu.addActions([self.relativeTargetAction, self.pickRelativeTargetAction])
-        self.applyRelativePosePushButton.setMenu(self.applyRelativePoseMenu)
+        self.pastePosePushButton = QtWidgets.QPushButton('Paste Pose')
+        self.pastePosePushButton.setObjectName('pastePosePushButton')
+        self.pastePosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.pastePosePushButton.setFixedHeight(24)
+        self.pastePosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.pastePosePushButton.setToolTip('Pastes the pose from the clipboard.')
+        self.pastePosePushButton.clicked.connect(self.on_pastePosePushButton_clicked)
 
-        # Initialize fetch menu
+        self.zeroPosePushButton = QtWidgets.QPushButton('Zero Pose')
+        self.zeroPosePushButton.setObjectName('zeroPosePushButton')
+        self.zeroPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.zeroPosePushButton.setFixedHeight(24)
+        self.zeroPosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.zeroPosePushButton.setToolTip('Resets all transform attributes to their default value.')
+        self.zeroPosePushButton.clicked.connect(self.on_zeroPosePushButton_clicked)
+
+        self.resetPosePushButton = QtWidgets.QPushButton('Reset Pose')
+        self.resetPosePushButton.setObjectName('resetPosePushButton')
+        self.resetPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.resetPosePushButton.setFixedHeight(24)
+        self.resetPosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.resetPosePushButton.setToolTip('Resets all attributes to their default value.')
+        self.resetPosePushButton.clicked.connect(self.on_resetPosePushButton_clicked)
+
+        self.holdTransformPushButton = QtWidgets.QPushButton('Hold Transform')
+        self.holdTransformPushButton.setObjectName('holdTransformPushButton')
+        self.holdTransformPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.holdTransformPushButton.setFixedHeight(24)
+        self.holdTransformPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.holdTransformPushButton.setToolTip('Holds the transform matrices from the selected nodes.')
+        self.holdTransformPushButton.clicked.connect(self.on_holdTransformPushButton_clicked)
+
+        self.fetchTransformLayout = QtWidgets.QHBoxLayout()
+        self.fetchTransformLayout.setObjectName('fetchTransformLayout')
+        self.fetchTransformLayout.setContentsMargins(0, 0, 0, 0)
+        self.fetchTransformLayout.setSpacing(1)
+
+        self.fetchTransformWidget = QtWidgets.QWidget()
+        self.fetchTransformWidget.setObjectName('fetchTransformWidget')
+        self.fetchTransformWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.fetchTransformWidget.setFixedHeight(24)
+        self.fetchTransformWidget.setLayout(self.fetchTransformLayout)
+
+        self.leftFetchTransformPushButton = QtWidgets.QPushButton('<')
+        self.leftFetchTransformPushButton.setObjectName('leftFetchTransformPushButton')
+        self.leftFetchTransformPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.leftFetchTransformPushButton.setMinimumWidth(24)
+        self.leftFetchTransformPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.leftFetchTransformPushButton.clicked.connect(self.on_leftFetchTransformPushButton_clicked)
+
+        self.fetchTransformPushButton = QtWidgets.QPushButton('Fetch Transform')
+        self.fetchTransformPushButton.setObjectName('fetchTransformPushButton')
+        self.fetchTransformPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Preferred))
+        self.fetchTransformPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.fetchTransformPushButton.setToolTip('Holds the transform matrices from the selected nodes.')
+        self.fetchTransformPushButton.clicked.connect(self.on_fetchTransformPushButton_clicked)
+
+        self.rightFetchTransformPushButton = QtWidgets.QPushButton('>')
+        self.rightFetchTransformPushButton.setObjectName('rightFetchTransformPushButton')
+        self.rightFetchTransformPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.rightFetchTransformPushButton.setMinimumWidth(24)
+        self.rightFetchTransformPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.rightFetchTransformPushButton.clicked.connect(self.on_rightFetchTransformPushButton_clicked)
+
+        self.fetchTransformLayout.addWidget(self.leftFetchTransformPushButton)
+        self.fetchTransformLayout.addWidget(self.fetchTransformPushButton)
+        self.fetchTransformLayout.addWidget(self.rightFetchTransformPushButton)
+
+        self.alignLayout = QtWidgets.QHBoxLayout()
+        self.alignLayout.setObjectName('alignLayout')
+        self.alignLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.alignWidget = QtWidgets.QWidget()
+        self.alignWidget.setObjectName('alignWidget')
+        self.alignWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.alignWidget.setFixedHeight(24)
+        self.alignWidget.setLayout(self.alignLayout)
+
+        self.alignTranslateXYZWidget = qxyzwidget.QXyzWidget('Pos')
+        self.alignTranslateXYZWidget.setObjectName('alignTranslateXYZWidget')
+        self.alignTranslateXYZWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.alignTranslateXYZWidget.setStyleSheet('QPushButton:hover:checked { background-color: green; }\nQPushButton:checked { background-color: darkgreen; border: none; }')
+        self.alignTranslateXYZWidget.setToolTip('Specify which translate axes should be aligned.')
+        self.alignTranslateXYZWidget.setCheckStates([True, True, True])
+
+        self.alignRotateXYZWidget = qxyzwidget.QXyzWidget('Rotate')
+        self.alignRotateXYZWidget.setObjectName('alignRotateXYZWidget')
+        self.alignRotateXYZWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.alignRotateXYZWidget.setStyleSheet('QPushButton:hover:checked { background-color: green; }\nQPushButton:checked { background-color: darkgreen; border: none; }')
+        self.alignRotateXYZWidget.setToolTip('Specify which rotate axes should be aligned.')
+        self.alignRotateXYZWidget.setCheckStates([True, True, True])
+
+        self.alignScaleXYZWidget = qxyzwidget.QXyzWidget('Scale')
+        self.alignScaleXYZWidget.setObjectName('alignScaleXYZWidget')
+        self.alignScaleXYZWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.alignScaleXYZWidget.setStyleSheet('QPushButton:hover:checked { background-color: green; }\nQPushButton:checked { background-color: darkgreen; border: none; }')
+        self.alignScaleXYZWidget.setToolTip('Specify which scale axes should be aligned.')
+        self.alignScaleXYZWidget.setCheckStates([False, False, False])
+
+        self.alignLayout.addWidget(self.alignTranslateXYZWidget)
+        self.alignLayout.addWidget(self.alignRotateXYZWidget)
+        self.alignLayout.addWidget(self.alignScaleXYZWidget)
+
+        self.quickPoseLayout.addWidget(self.copyPosePushButton, 0, 0)
+        self.quickPoseLayout.addWidget(self.pastePosePushButton, 0, 1)
+        self.quickPoseLayout.addWidget(self.zeroPosePushButton, 1, 0)
+        self.quickPoseLayout.addWidget(self.resetPosePushButton, 1, 1)
+        self.quickPoseLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 2, 0, 1, 2)
+        self.quickPoseLayout.addWidget(self.holdTransformPushButton, 3, 0)
+        self.quickPoseLayout.addWidget(self.fetchTransformWidget, 3, 1)
+        self.quickPoseLayout.addWidget(self.alignWidget, 4, 0, 1, 2)
+
+        centralLayout.addWidget(self.quickPoseGroupBox)
+
+        # Initialize mirror range widget
         #
-        self.matchButtonGroup = QtWidgets.QButtonGroup(parent=self.matchWidget)
-        self.matchButtonGroup.setObjectName('matchButtonGroup')
-        self.matchButtonGroup.setExclusive(False)
-        self.matchButtonGroup.addButton(self.matchTranslateCheckBox, id=0)
-        self.matchButtonGroup.addButton(self.matchRotateCheckBox, id=1)
-        self.matchButtonGroup.addButton(self.matchScaleCheckBox, id=2)
+        self.mirrorRangeLayout = QtWidgets.QGridLayout()
+        self.mirrorRangeLayout.setObjectName('mirrorRangeLayout')
+        self.mirrorRangeLayout.setContentsMargins(0, 0, 0, 0)
 
-        # Edit time-range spin boxes
-        #
-        self.mirrorStartTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.StartTime)
+        self.mirrorRangeWidget = QtWidgets.QWidget()
+        self.mirrorRangeWidget.setObjectName('mirrorRangeWidget')
+        self.mirrorRangeWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorRangeWidget.setLayout(self.mirrorRangeLayout)
+
+        self.mirrorStartTimeLabel = QtWidgets.QLabel('-Start Time-')
+        self.mirrorStartTimeLabel.setObjectName('mirrorStartTimeLabel')
+        self.mirrorStartTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorStartTimeLabel.setMinimumHeight(24)
+        self.mirrorStartTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.mirrorStartTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.mirrorStartTimeSpinBox.setObjectName('mirrorStartTimeSpinBox')
+        self.mirrorStartTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorStartTimeSpinBox.setMinimumHeight(24)
+        self.mirrorStartTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.mirrorStartTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.START_TIME)
+        self.mirrorStartTimeSpinBox.setMinimum(-9999999)
+        self.mirrorStartTimeSpinBox.setMaximum(9999999)
         self.mirrorStartTimeSpinBox.setValue(self.scene.startTime)
+        self.mirrorStartTimeSpinBox.setEnabled(False)
+        
+        self.mirrorStartTimeCheckBox = QtWidgets.QCheckBox('')
+        self.mirrorStartTimeCheckBox.setObjectName('mirrorStartTimeLabel')
+        self.mirrorStartTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorStartTimeCheckBox.setMinimumHeight(24)
+        self.mirrorStartTimeCheckBox.toggled.connect(self.mirrorStartTimeSpinBox.setEnabled)
 
-        self.mirrorEndTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.EndTime)
+        self.mirrorEndTimeLabel = QtWidgets.QLabel('-End Time-')
+        self.mirrorEndTimeLabel.setObjectName('mirrorEndTimeLabel')
+        self.mirrorEndTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorEndTimeLabel.setMinimumHeight(24)
+        self.mirrorEndTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.mirrorEndTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.mirrorEndTimeSpinBox.setObjectName('mirrorEndTimeSpinBox')
+        self.mirrorEndTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorEndTimeSpinBox.setMinimumHeight(24)
+        self.mirrorEndTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.mirrorEndTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.END_TIME)
+        self.mirrorEndTimeSpinBox.setMinimum(-9999999)
+        self.mirrorEndTimeSpinBox.setMaximum(9999999)
         self.mirrorEndTimeSpinBox.setValue(self.scene.endTime)
+        self.mirrorEndTimeSpinBox.setEnabled(False)
 
-        self.mirrorInsertTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.CurrentTime)
-        self.mirrorInsertTimeSpinBox.setValue(self.scene.startTime)
+        self.mirrorEndTimeCheckBox = QtWidgets.QCheckBox('')
+        self.mirrorEndTimeCheckBox.setObjectName('mirrorEndTimeLabel')
+        self.mirrorEndTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorEndTimeCheckBox.setMinimumHeight(24)
+        self.mirrorEndTimeCheckBox.toggled.connect(self.mirrorEndTimeSpinBox.setEnabled)
 
+        self.mirrorInsertTimeLabel = QtWidgets.QLabel('~Insert-At~')
+        self.mirrorInsertTimeLabel.setObjectName('mirrorInsertTimeLabel')
+        self.mirrorInsertTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorInsertTimeLabel.setMinimumHeight(24)
+        self.mirrorInsertTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.mirrorInsertTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.mirrorInsertTimeSpinBox.setObjectName('mirrorInsertTimeSpinBox')
+        self.mirrorInsertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorInsertTimeSpinBox.setMinimumHeight(24)
+        self.mirrorInsertTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.mirrorInsertTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.CURRENT_TIME)
+        self.mirrorInsertTimeSpinBox.setMinimum(-9999999)
+        self.mirrorInsertTimeSpinBox.setMaximum(9999999)
+        self.mirrorInsertTimeSpinBox.setValue(self.scene.time)
+        self.mirrorInsertTimeSpinBox.setEnabled(False)
+
+        self.mirrorInsertTimeCheckBox = QtWidgets.QCheckBox('')
+        self.mirrorInsertTimeCheckBox.setObjectName('mirrorInsertTimeLabel')
+        self.mirrorInsertTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.mirrorInsertTimeCheckBox.setMinimumHeight(24)
+        self.mirrorInsertTimeCheckBox.toggled.connect(self.mirrorInsertTimeSpinBox.setEnabled)
+
+        self.mirrorRangeLayout.addWidget(self.mirrorStartTimeLabel, 0, 1)
+        self.mirrorRangeLayout.addWidget(self.mirrorStartTimeCheckBox, 1, 0)
+        self.mirrorRangeLayout.addWidget(self.mirrorStartTimeSpinBox, 1, 1)
+        self.mirrorRangeLayout.addWidget(self.mirrorEndTimeLabel, 0, 3)
+        self.mirrorRangeLayout.addWidget(self.mirrorEndTimeCheckBox, 1, 2)
+        self.mirrorRangeLayout.addWidget(self.mirrorEndTimeSpinBox, 1, 3)
+        self.mirrorRangeLayout.addWidget(self.mirrorInsertTimeLabel, 0, 5)
+        self.mirrorRangeLayout.addWidget(self.mirrorInsertTimeCheckBox, 1, 4)
+        self.mirrorRangeLayout.addWidget(self.mirrorInsertTimeSpinBox, 1, 5)
+
+        # Initialize quick-mirror group-box
+        #
+        self.quickMirrorLayout = QtWidgets.QGridLayout()
+        self.quickMirrorLayout.setObjectName('quickMirrorLayout')
+
+        self.quickMirrorGroupBox = QtWidgets.QGroupBox('Quick Mirror:')
+        self.quickMirrorGroupBox.setObjectName('quickMirrorGroupBox')
+        self.quickMirrorGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+        self.quickMirrorGroupBox.setLayout(self.quickMirrorLayout)
+
+        self.mirrorPosePushButton = QtWidgets.QPushButton('Mirror Pose')
+        self.mirrorPosePushButton.setObjectName('mirrorPosePushButton')
+        self.mirrorPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorPosePushButton.setFixedHeight(24)
+        self.mirrorPosePushButton.setToolTip('Mirrors the pose to the opposite nodes.')
+        self.mirrorPosePushButton.clicked.connect(self.on_mirrorPosePushButton_clicked)
+
+        self.pullPosePushButton = QtWidgets.QPushButton('Pull Pose')
+        self.pullPosePushButton.setObjectName('pullPosePushButton')
+        self.pullPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.pullPosePushButton.setFixedHeight(24)
+        self.pullPosePushButton.setToolTip('Pulls the pose from the opposite nodes.')
+        self.pullPosePushButton.clicked.connect(self.on_pullPosePushButton_clicked)
+
+        self.mirrorAnimationPushButton = QtWidgets.QPushButton('Mirror Animation')
+        self.mirrorAnimationPushButton.setObjectName('mirrorAnimationPushButton')
+        self.mirrorAnimationPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorAnimationPushButton.setFixedHeight(24)
+        self.mirrorAnimationPushButton.setToolTip('Mirrors the animation to the opposite nodes.')
+        self.mirrorAnimationPushButton.clicked.connect(self.on_mirrorAnimationPushButton_clicked)
+
+        self.pullAnimationPushButton = QtWidgets.QPushButton('Pull Animation')
+        self.pullAnimationPushButton.setObjectName('pullAnimationPushButton')
+        self.pullAnimationPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.pullAnimationPushButton.setFixedHeight(24)
+        self.pullAnimationPushButton.setToolTip('Pulls the animation from the opposite nodes.')
+        self.pullAnimationPushButton.clicked.connect(self.on_pullAnimationPushButton_clicked)
+
+        self.quickMirrorLayout.addWidget(self.mirrorPosePushButton, 0, 0)
+        self.quickMirrorLayout.addWidget(self.pullPosePushButton, 0, 1)
+        self.quickMirrorLayout.addWidget(self.mirrorAnimationPushButton, 1, 0)
+        self.quickMirrorLayout.addWidget(self.pullAnimationPushButton, 1, 1)
+        self.quickMirrorLayout.addWidget(self.mirrorRangeWidget, 2, 0, 1, 2)
+
+        centralLayout.addWidget(self.quickMirrorGroupBox)
+    # endregion
+
+    # region Methods
     def loadSettings(self, settings):
         """
         Loads the user settings.
@@ -312,8 +610,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         # Load user preferences
         #
-        self.setCurrentPath(settings.value('tabs/library/currentPath', defaultValue=self.currentPath()))
-        self.setTransformOptions(json.loads(settings.value('tabs/library/transformOptions', defaultValue='[true, true, false]')))
+        self.setCurrentPath(settings.value('tabs/library/currentPath', defaultValue=self.currentPath(), type=str))
 
     def saveSettings(self, settings):
         """
@@ -330,7 +627,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         # Save user preferences
         #
         settings.setValue('tabs/library/currentPath', self.currentPath())
-        settings.setValue('tabs/library/transformOptions', json.dumps(self.transformOptions()))
 
     def currentPath(self, absolute=False):
         """
@@ -375,27 +671,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         if os.path.exists(absolutePath):
 
             self.pathLineEdit.setText(path)
-
-    def transformOptions(self):
-        """
-        Returns the transform options.
-
-        :rtype: Tuple[bool, bool, bool]
-        """
-
-        return [action.isChecked() for action in self.matchButtonGroup.buttons()]
-
-    def setTransformOptions(self, options):
-        """
-        Updates the transform options.
-
-        :type options: Tuple[bool, bool, bool]
-        :rtype: None
-        """
-
-        for (i, action) in enumerate(self.matchButtonGroup.buttons()):
-
-            action.setChecked(options[i])
 
     def selectedPath(self, asString=None):
         """
@@ -476,7 +751,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             return None
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def addFolder(self):
         """
         Prompts the user to create a new folder.
@@ -526,7 +801,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
             os.mkdir(absolutePath)
             self.refresh()
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def addPose(self):
         """
         Prompts the user to create a new pose file.
@@ -563,7 +838,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         #
         self.refresh()
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def addAnimation(self):
         """
         Prompts the user to create a new animation file.
@@ -603,7 +878,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         #
         self.refresh()
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def openInExplorer(self):
         """
         Opens the selected file inside an explorer window.
@@ -623,7 +898,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             log.warning(f'Cannot find directory: {path}')
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def renameFile(self):
         """
         Renames the selected file or folder.
@@ -674,7 +949,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         os.rename(source, destination)
         self.refresh()
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def updateFile(self):
         """
         Updates the selected file.
@@ -712,7 +987,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             log.warning(f'Cannot update file: {path}')
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def deleteFile(self):
         """
         Deletes the selected file or folder.
@@ -755,7 +1030,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
             os.remove(str(path))
             self.refresh()
 
-    @undo(name='Apply Pose')
+    @undo.Undo(name='Apply Pose')
     def applyPose(self, pose):
         """
         Applies the supplied pose to the active selection.
@@ -769,7 +1044,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         pose.applyTo(*selection, namespace=namespace)
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def pickRelativeTarget(self):
         """
         Updates the relative target based on the active selection.
@@ -793,7 +1068,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             log.warning('Please pick 1 node to set as a relative target!')
 
-    @undo(name='Apply Relative Pose')
+    @undo.Undo(name='Apply Relative Pose')
     def applyRelativePose(self, target, pose):
         """
         Applies the supplied pose, relative, the specified target.
@@ -808,7 +1083,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         pose.applyRelativeTo(selection, target, namespace=namespace)
 
-    @undo(name='Apply Animation')
+    @undo.Undo(name='Apply Animation')
     def applyAnimation(self, pose, insertAt=None):
         """
         Applies the supplied animation to the active selection.
@@ -823,7 +1098,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         pose.applyAnimationTo(*selection, insertAt=insertAt, namespace=namespace)
 
-    @undo(name='Apply Relative Animation')
+    @undo.Undo(name='Apply Relative Animation')
     def applyRelativeAnimation(self, insertAt, pose):
         """
         Applies the supplied animation to the active selection at the specified time.
@@ -838,7 +1113,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         pose.applyAnimationTo(*selection, insertAt=insertAt, namespace=namespace)
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def copyPose(self):
         """
         Copies the selected pose to the internal clipboard.
@@ -848,7 +1123,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self._poseClipboard = poseutils.createPose(*self.getSelection())
 
-    @undo(name='Paste Pose')
+    @undo.Undo(name='Paste Pose')
     def pastePose(self):
         """
         Pastes the pose from the internal clipboard onto the active selection.
@@ -870,7 +1145,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self._poseClipboard.applyTo(*selection, namespace=namespace)
 
-    @undo(name='Reset Pose')
+    @undo.Undo(name='Reset Pose')
     def resetPose(self, skipUserAttributes=False):
         """
         Resets the transforms on the active selection.
@@ -883,7 +1158,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             node.resetTransform(skipUserAttributes=skipUserAttributes)
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def holdPose(self):
         """
         Copies the pose transform values from the active selection.
@@ -893,7 +1168,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self._matrixClipboard = poseutils.createPose(*self.getSelection())
 
-    @undo(name='Fetch Pose')
+    @undo.Undo(name='Fetch Pose')
     def fetchPose(self):
         """
         Applies the pose transforms to the active selection.
@@ -910,18 +1185,14 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         # Apply transforms to active selection
         #
-        translateEnabled, rotateEnabled, scaleEnabled = self.transformOptions()
         selection = self.getSelection(sort=True)
+        skipTranslate = self.alignTranslateXYZWidget.flags(prefix='skipTranslate', inverse=True)
+        skipRotate = self.alignRotateXYZWidget.flags(prefix='skipRotate', inverse=True)
+        skipScale = self.alignScaleXYZWidget.flags(prefix='skipScale', inverse=True)
 
-        self._matrixClipboard.applyTransformsTo(
-            *selection,
-            worldSpace=True,
-            skipTranslate=(not translateEnabled),
-            skipRotate=(not rotateEnabled),
-            skipScale=(not scaleEnabled)
-        )
+        self._matrixClipboard.applyTransformsTo(*selection, worldSpace=True, **skipTranslate, **skipRotate, **skipScale)
 
-    @undo(name='Mirror Pose')
+    @undo.Undo(name='Mirror Pose')
     def mirrorPose(self, pull=False):
         """
         Mirrors the transforms on the active selection.
@@ -948,7 +1219,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             pose.applyOppositeTo(*selection)
 
-    @undo(name='Mirror Animation')
+    @undo.Undo(name='Mirror Animation')
     def mirrorAnimation(self, insertAt, animationRange, pull=False):
         """
         Mirrors the animation on the active selection.
@@ -977,7 +1248,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
             pose.applyAnimationOppositeTo(*selection, insertAt=insertAt, animationRange=animationRange)
 
-    @undo(state=False)
+    @undo.Undo(state=False)
     def refresh(self):
         """
         Refreshes the file item model's current working directory.
@@ -1391,7 +1662,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         replace = not (modifiers == QtCore.Qt.ShiftModifier)
-        print(replace)
+
         self.selectOppositeControls(replace=replace)
 
     @QtCore.Slot(bool)

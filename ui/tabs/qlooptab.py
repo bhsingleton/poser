@@ -2,7 +2,8 @@ from maya.api import OpenMaya as om, OpenMayaAnim as oma
 from Qt import QtCore, QtWidgets, QtGui
 from enum import IntEnum
 from dcc.python import stringutils
-from dcc.maya.decorators.undo import undo, commit
+from dcc.ui import qtimespinbox, qdivider
+from dcc.maya.decorators import undo
 from . import qabstracttab
 
 import logging
@@ -36,53 +37,300 @@ class QLoopTab(qabstracttab.QAbstractTab):
     """
 
     # region Dunderscores
-    __labels__ = (
-        'Enter the start and end frame of your loop.\nAny keys outside this range will be overwritten with baked keys!',
-        'Enter the start and end frame of your animation.\nAny infinity curves inside this range will be baked down!'
-    )
+    __bake_labels__ = {
+        BakeType.RANGE: 'Enter the start and end frame of your loop.\nAny keys outside this range will be overwritten with baked keys!',
+        BakeType.OUT_OF_RANGE: 'Enter the start and end frame of your animation.\nAny infinity curves inside this range will be baked down!'
+    }
 
-    def __init__(self, *args, **kwargs):
+    def __setup_ui__(self, *args, **kwargs):
         """
-        Private method called after a new instance has been created.
+        Private method that initializes the user interface.
 
-        :key parent: QtWidgets.QWidget
-        :key flags: QtCore.Qt.WindowFlags
         :rtype: None
         """
 
-        # Call parent method
+        # Initialize central layout
         #
-        super(QLoopTab, self).__init__(*args, **kwargs)
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
 
-        # Declare public variables
+        self.setLayout(centralLayout)
+
+        # Initialize infinity group-box
         #
-        self.infinityTypeGroupBox = None
-        self.constantPushButton = None
-        self.linearPushButton = None
-        self.cyclePushButton = None
-        self.cycleOffsetPushButton = None
-        self.oscillatePushButton = None
-        self.infinityTypeButtonGroup = None
+        self.infinityLayout = QtWidgets.QGridLayout()
+        self.infinityLayout.setObjectName('infinityLayout')
 
-        self.tangentsGroupBox = None
-        self.flattenTangentsPushButton = None
-        self.alignTangentsPushButton = None
+        self.infinityGroupBox = QtWidgets.QGroupBox('Pre/Post Infinity:')
+        self.infinityGroupBox.setObjectName('infinityGroupBox')
+        self.infinityGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.infinityGroupBox.setLayout(self.infinityLayout)
 
-        self.bakeGroupBox = None
-        self.bakeLabel = None
-        self.bakeTypeWidget = None
-        self.bakeRangeRadioButton = None
-        self.bakeOutOfRangeRadioButton = None
-        self.bakeTypeButtonGroup = None
-        self.startTimeWidget = None
-        self.startTimeLabel = None
-        self.startTimeSpinBox = None
-        self.endTimeWidget = None
-        self.endTimeLabel = None
-        self.endTimeSpinBox = None
-        self.alignEndTangentsCheckBox = None
-        self.skipCustomAttributesCheckBox = None
-        self.bakePushButton = None
+        self.constantPushButton = QtWidgets.QPushButton(QtGui.QIcon(':/ezposer/icons/ort_constant.png'), '')
+        self.constantPushButton.setObjectName('constantPushButton')
+        self.constantPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.constantPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.constantPushButton.setIconSize(QtCore.QSize(72, 72))
+        self.constantPushButton.setCheckable(True)
+        self.constantPushButton.setChecked(True)
+        
+        self.constantLabel = QtWidgets.QLabel('Constant')
+        self.constantLabel.setObjectName('constantLabel')
+        self.constantLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.constantLabel.setFixedHeight(24)
+        self.constantLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.linearPushButton = QtWidgets.QPushButton(QtGui.QIcon(':/ezposer/icons/ort_linear.png'), '')
+        self.linearPushButton.setObjectName('linearPushButton')
+        self.linearPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.linearPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.linearPushButton.setIconSize(QtCore.QSize(72, 72))
+        self.linearPushButton.setCheckable(True)
+
+        self.linearLabel = QtWidgets.QLabel('Linear')
+        self.linearLabel.setObjectName('linearLabel')
+        self.linearLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.linearLabel.setFixedHeight(24)
+        self.linearLabel.setAlignment(QtCore.Qt.AlignCenter)
+        
+        self.cyclePushButton = QtWidgets.QPushButton(QtGui.QIcon(':/ezposer/icons/ort_cycle.png'), '')
+        self.cyclePushButton.setObjectName('cyclePushButton')
+        self.cyclePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.cyclePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.cyclePushButton.setIconSize(QtCore.QSize(72, 72))
+        self.cyclePushButton.setCheckable(True)
+
+        self.cycleLabel = QtWidgets.QLabel('Cycle')
+        self.cycleLabel.setObjectName('cycleLabel')
+        self.cycleLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.cycleLabel.setFixedHeight(24)
+        self.cycleLabel.setAlignment(QtCore.Qt.AlignCenter)
+        
+        self.cycleOffsetPushButton = QtWidgets.QPushButton(QtGui.QIcon(':/ezposer/icons/ort_cycle_offset.png'), '')
+        self.cycleOffsetPushButton.setObjectName('cycleOffsetPushButton')
+        self.cycleOffsetPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.cycleOffsetPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.cycleOffsetPushButton.setIconSize(QtCore.QSize(72, 72))
+        self.cycleOffsetPushButton.setCheckable(True)
+
+        self.cycleOffsetLabel = QtWidgets.QLabel('Cycle-Offset')
+        self.cycleOffsetLabel.setObjectName('cycleOffsetLabel')
+        self.cycleOffsetLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.cycleOffsetLabel.setFixedHeight(24)
+        self.cycleOffsetLabel.setAlignment(QtCore.Qt.AlignCenter)
+        
+        self.oscillatePushButton = QtWidgets.QPushButton(QtGui.QIcon(':/ezposer/icons/ort_oscilate.png'), '')
+        self.oscillatePushButton.setObjectName('oscillatePushButton')
+        self.oscillatePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.oscillatePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.oscillatePushButton.setIconSize(QtCore.QSize(72, 72))
+        self.oscillatePushButton.setCheckable(True)
+
+        self.oscillateLabel = QtWidgets.QLabel('Oscillate')
+        self.oscillateLabel.setObjectName('oscillateLabel')
+        self.oscillateLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.oscillateLabel.setFixedHeight(24)
+        self.oscillateLabel.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.infinityTypeButtonGroup = QtWidgets.QButtonGroup(self.infinityGroupBox)
+        self.infinityTypeButtonGroup.setExclusive(True)
+        self.infinityTypeButtonGroup.addButton(self.constantPushButton, id=0)
+        self.infinityTypeButtonGroup.addButton(self.linearPushButton, id=1)
+        self.infinityTypeButtonGroup.addButton(self.cyclePushButton, id=2)
+        self.infinityTypeButtonGroup.addButton(self.cycleOffsetPushButton, id=3)
+        self.infinityTypeButtonGroup.addButton(self.oscillatePushButton, id=4)
+
+        self.preInfinityPushButton = QtWidgets.QPushButton('<<')
+        self.preInfinityPushButton.setObjectName('preInfinityPushButton')
+        self.preInfinityPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.preInfinityPushButton.setFixedHeight(24)
+        self.preInfinityPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.preInfinityPushButton.clicked.connect(self.on_preInfinityPushButton_clicked)
+
+        self.postInfinityPushButton = QtWidgets.QPushButton('>>')
+        self.postInfinityPushButton.setObjectName('postInfinityPushButton')
+        self.postInfinityPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.postInfinityPushButton.setFixedHeight(24)
+        self.postInfinityPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.postInfinityPushButton.clicked.connect(self.on_postInfinityPushButton_clicked)
+
+        self.infinityInteropLayout = QtWidgets.QHBoxLayout()
+        self.infinityInteropLayout.setObjectName('infinityInteropLayout')
+        self.infinityInteropLayout.setContentsMargins(0, 0, 0, 0)
+        self.infinityInteropLayout.addWidget(self.preInfinityPushButton)
+        self.infinityInteropLayout.addWidget(self.postInfinityPushButton)
+
+        self.infinityLayout.addWidget(self.constantPushButton, 0, 0)
+        self.infinityLayout.addWidget(self.constantLabel, 1, 0)
+        self.infinityLayout.addWidget(self.linearPushButton, 0, 1)
+        self.infinityLayout.addWidget(self.linearLabel, 1, 1)
+        self.infinityLayout.addWidget(self.cyclePushButton, 2, 0)
+        self.infinityLayout.addWidget(self.cycleLabel, 3, 0)
+        self.infinityLayout.addWidget(self.cycleOffsetPushButton, 2, 1)
+        self.infinityLayout.addWidget(self.cycleOffsetLabel, 3, 1)
+        self.infinityLayout.addWidget(self.oscillatePushButton, 2, 2)
+        self.infinityLayout.addWidget(self.oscillateLabel, 3, 2)
+        self.infinityLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 4, 0, 1, 3)
+        self.infinityLayout.addLayout(self.infinityInteropLayout, 5, 0, 1, 3)
+        
+        centralLayout.addWidget(self.infinityGroupBox)
+        
+        # Initialize tangents group-box
+        #
+        self.tangentsLayout = QtWidgets.QGridLayout()
+        self.tangentsLayout.setObjectName('tangentsLayout')
+
+        self.tangentsGroupBox = QtWidgets.QGroupBox('Start/End Tangents:')
+        self.tangentsGroupBox.setObjectName('tangentsGroupBox')
+        self.tangentsGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.tangentsGroupBox.setLayout(self.tangentsLayout)
+
+        self.flattenTangentsPushButton = QtWidgets.QPushButton('Flatten')
+        self.flattenTangentsPushButton.setObjectName('flattenTangentsPushButton')
+        self.flattenTangentsPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.flattenTangentsPushButton.setFixedHeight(24)
+        self.flattenTangentsPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.flattenTangentsPushButton.setToolTip('Sets the start and end tangent types to auto.')
+        self.flattenTangentsPushButton.clicked.connect(self.on_flattenTangentsPushButton_clicked)
+
+        self.alignTangentsPushButton = QtWidgets.QPushButton('Align')
+        self.alignTangentsPushButton.setObjectName('alignTangentsPushButton')
+        self.alignTangentsPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.alignTangentsPushButton.setFixedHeight(24)
+        self.alignTangentsPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.alignTangentsPushButton.setToolTip('Copies the start tangent and pastes it onto the end tangent.')
+        self.alignTangentsPushButton.clicked.connect(self.on_alignTangentsPushButton_clicked)
+
+        self.tangentsLayout.addWidget(self.flattenTangentsPushButton, 0, 0)
+        self.tangentsLayout.addWidget(self.alignTangentsPushButton, 0, 1)
+        
+        centralLayout.addWidget(self.tangentsGroupBox)
+        
+        # Initialize baking group-box
+        #
+        self.bakingLayout = QtWidgets.QGridLayout()
+        self.bakingLayout.setObjectName('bakingLayout')
+
+        self.bakingGroupBox = QtWidgets.QGroupBox('Baking:')
+        self.bakingGroupBox.setObjectName('bakingGroupBox')
+        self.bakingGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.bakingGroupBox.setLayout(self.bakingLayout)
+
+        self.bakeLabel = QtWidgets.QLabel(self.__bake_labels__[BakeType.OUT_OF_RANGE])
+        self.bakeLabel.setObjectName('bakeLabel')
+        self.bakeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.bakeLabel.setMinimumHeight(48)
+        self.bakeLabel.setAlignment(QtCore.Qt.AlignCenter)
+        self.bakeLabel.setWordWrap(False)
+
+        self.bakeRangeRadioButton = QtWidgets.QRadioButton('Range')
+        self.bakeRangeRadioButton.setObjectName('bakeRangeRadioButton')
+        self.bakeRangeRadioButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.bakeRangeRadioButton.setFixedHeight(24)
+        self.bakeRangeRadioButton.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        self.bakeOutOfRangeRadioButton = QtWidgets.QRadioButton('Out-Of-Range')
+        self.bakeOutOfRangeRadioButton.setObjectName('bakeOutOfRangeRadioButton')
+        self.bakeOutOfRangeRadioButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.bakeOutOfRangeRadioButton.setFixedHeight(24)
+        self.bakeOutOfRangeRadioButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.bakeOutOfRangeRadioButton.setChecked(True)
+
+        self.bakeTypeButtonGroup = QtWidgets.QButtonGroup(self.bakingGroupBox)
+        self.bakeTypeButtonGroup.setExclusive(True)
+        self.bakeTypeButtonGroup.addButton(self.bakeRangeRadioButton, id=0)
+        self.bakeTypeButtonGroup.addButton(self.bakeOutOfRangeRadioButton, id=1)
+        self.bakeTypeButtonGroup.idClicked.connect(self.on_bakeTypeButtonGroup_idClicked)
+
+        self.startTimeLayout = QtWidgets.QHBoxLayout()
+        self.startTimeLayout.setObjectName('startTimeLayout')
+        self.startTimeLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.startTimeWidget = QtWidgets.QWidget()
+        self.startTimeWidget.setObjectName('startTimeWidget')
+        self.startTimeWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.startTimeWidget.setFixedHeight(24)
+        self.startTimeWidget.setLayout(self.startTimeLayout)
+
+        self.startTimeLabel = QtWidgets.QLabel('Start:')
+        self.startTimeLabel.setObjectName('startTimeLabel')
+        self.startTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.startTimeLabel.setFixedWidth(32)
+        self.startTimeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.startTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.startTimeSpinBox.setObjectName('startTimeSpinBox')
+        self.startTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.startTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.startTimeSpinBox.setToolTip('The start frame to sample from.')
+        self.startTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.START_TIME)
+        self.startTimeSpinBox.setMinimum(-9999999)
+        self.startTimeSpinBox.setMaximum(9999999)
+        self.startTimeSpinBox.setValue(self.scene.startTime)
+
+        self.startTimeLayout.addWidget(self.startTimeLabel)
+        self.startTimeLayout.addWidget(self.startTimeSpinBox)
+
+        self.endTimeLayout = QtWidgets.QHBoxLayout()
+        self.endTimeLayout.setObjectName('endTimeLayout')
+        self.endTimeLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.endTimeWidget = QtWidgets.QWidget()
+        self.endTimeWidget.setObjectName('endTimeWidget')
+        self.endTimeWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.endTimeWidget.setFixedHeight(24)
+        self.endTimeWidget.setLayout(self.endTimeLayout)
+
+        self.endTimeLabel = QtWidgets.QLabel('End:')
+        self.endTimeLabel.setObjectName('endTimeLabel')
+        self.endTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.endTimeLabel.setFixedWidth(32)
+        self.endTimeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.endTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.endTimeSpinBox.setObjectName('endTimeSpinBox')
+        self.endTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.endTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.endTimeSpinBox.setToolTip('The end frame to sample from.')
+        self.endTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.END_TIME)
+        self.endTimeSpinBox.setMinimum(-9999999)
+        self.endTimeSpinBox.setMaximum(9999999)
+        self.endTimeSpinBox.setValue(self.scene.endTime)
+
+        self.endTimeLayout.addWidget(self.endTimeLabel)
+        self.endTimeLayout.addWidget(self.endTimeSpinBox)
+
+        self.alignEndTangentsCheckBox = QtWidgets.QCheckBox('Align End Tangents')
+        self.alignEndTangentsCheckBox.setObjectName('alignEndTangentsCheckBox')
+        self.alignEndTangentsCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.alignEndTangentsCheckBox.setFixedHeight(24)
+        self.alignEndTangentsCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        self.skipCustomAttributesCheckBox = QtWidgets.QCheckBox('Skip Custom Attributes')
+        self.skipCustomAttributesCheckBox.setObjectName('skipCustomAttributesCheckBox')
+        self.skipCustomAttributesCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.skipCustomAttributesCheckBox.setFixedHeight(24)
+        self.skipCustomAttributesCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        self.bakePushButton = QtWidgets.QPushButton('Bake')
+        self.bakePushButton.setObjectName('bakePushButton')
+        self.bakePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.bakePushButton.setFixedHeight(48)
+        self.bakePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.bakePushButton.clicked.connect(self.on_bakePushButton_clicked)
+
+        self.bakingLayout.addWidget(self.bakeLabel, 0, 0, 1, 2)
+        self.bakingLayout.addWidget(self.bakeRangeRadioButton, 1, 0, alignment=QtCore.Qt.AlignCenter)
+        self.bakingLayout.addWidget(self.bakeOutOfRangeRadioButton, 1, 1, alignment=QtCore.Qt.AlignCenter)
+        self.bakingLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 2, 0, 1, 2)
+        self.bakingLayout.addWidget(self.startTimeWidget, 3, 0)
+        self.bakingLayout.addWidget(self.endTimeWidget, 3, 1)
+        self.bakingLayout.addWidget(self.alignEndTangentsCheckBox, 4, 0)
+        self.bakingLayout.addWidget(self.skipCustomAttributesCheckBox, 4, 1)
+        self.bakingLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 5, 0, 1, 2)
+        self.bakingLayout.addWidget(self.bakePushButton, 6, 0, 1, 2)
+
+        centralLayout.addWidget(self.bakingGroupBox)
     # endregion
 
     # region Properties
@@ -152,40 +400,6 @@ class QLoopTab(qabstracttab.QAbstractTab):
     # endregion
 
     # region Methods
-    def postLoad(self, *args, **kwargs):
-        """
-        Called after the user interface has been loaded.
-
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QLoopTab, self).postLoad(*args, **kwargs)
-
-        # Initialize infinity button group
-        #
-        self.infinityTypeButtonGroup = QtWidgets.QButtonGroup(self.infinityTypeGroupBox)
-        self.infinityTypeButtonGroup.setExclusive(True)
-        self.infinityTypeButtonGroup.addButton(self.constantPushButton, id=0)
-        self.infinityTypeButtonGroup.addButton(self.linearPushButton, id=1)
-        self.infinityTypeButtonGroup.addButton(self.cyclePushButton, id=2)
-        self.infinityTypeButtonGroup.addButton(self.cycleOffsetPushButton, id=3)
-        self.infinityTypeButtonGroup.addButton(self.oscillatePushButton, id=4)
-
-        # Initialize baking button group
-        #
-        self.bakeTypeButtonGroup = QtWidgets.QButtonGroup(self.bakeGroupBox)
-        self.bakeTypeButtonGroup.setExclusive(True)
-        self.bakeTypeButtonGroup.addButton(self.bakeRangeRadioButton, id=0)
-        self.bakeTypeButtonGroup.addButton(self.bakeOutOfRangeRadioButton, id=1)
-        self.bakeTypeButtonGroup.idClicked.connect(self.on_bakeTypeButtonGroup_idClicked)
-
-        # Edit start/end time spin boxes
-        #
-        self.startTimeSpinBox.setDefaultType(self.startTimeSpinBox.DefaultType.StartTime)
-        self.endTimeSpinBox.setDefaultType(self.endTimeSpinBox.DefaultType.EndTime)
-
     def loadSettings(self, settings):
         """
         Loads the user settings.
@@ -200,15 +414,15 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         # Load user preferences
         #
-        self.infinityType = int(settings.value('tabs/loop/infinityType', defaultValue=3))
-        self.alignEndTangents = bool(settings.value('tabs/loop/alignEndTangents', defaultValue=1))
-        self.skipCustomAttributes = bool(settings.value('tabs/loop/skipCustomAttributes', defaultValue=1))
+        self.infinityType = settings.value('tabs/loop/infinityType', defaultValue=3, type=int)
+        self.alignEndTangents = settings.value('tabs/loop/alignEndTangents', defaultValue=1, type=int)
+        self.skipCustomAttributes = settings.value('tabs/loop/skipCustomAttributes', defaultValue=1, type=int)
 
-        startTime = int(settings.value('tabs/loop/startTime', defaultValue=self.scene.startTime))
-        endTime = int(settings.value('tabs/loop/endTime', defaultValue=self.scene.endTime))
+        startTime = settings.value('tabs/loop/startTime', defaultValue=self.scene.startTime, type=int)
+        endTime = settings.value('tabs/loop/endTime', defaultValue=self.scene.endTime, type=int)
         self.setAnimationRange((startTime, endTime))
 
-        bakeType = int(settings.value('tabs/loop/bakeType', defaultValue=0))
+        bakeType = settings.value('tabs/loop/bakeType', defaultValue=0, type=int)
         self.setBakeType(bakeType)
 
     def saveSettings(self, settings):
@@ -282,7 +496,7 @@ class QLoopTab(qabstracttab.QAbstractTab):
         self.startTimeSpinBox.setValue(startTime)
         self.endTimeSpinBox.setValue(endTime)
 
-    @undo(name="Set Infinity Types")
+    @undo.Undo(name="Set Infinity Types")
     def setInfinityTypes(self, *nodes, pre=True, post=True, infinityType=0):
         """
         Updates the infinity type on the supplied node's animation curves.
@@ -324,9 +538,9 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         # Cache changes
         #
-        commit(change.redoIt, change.undoIt)
+        undo.commit(change.redoIt, change.undoIt)
 
-    @undo(name='Flatten Tangents')
+    @undo.Undo(name='Flatten Tangents')
     def flattenTangents(self, *nodes):
         """
         Flattens the start and end tangents on the supplied node's animation curves.
@@ -373,9 +587,9 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         # Cache changes
         #
-        commit(change.redoIt, change.undoIt)
+        undo.commit(change.redoIt, change.undoIt)
 
-    @undo(name='Align Tangents')
+    @undo.Undo(name='Align Tangents')
     def alignTangents(self, *nodes):
         """
         Aligns the start and end tangents on the supplied node's animation curves.
@@ -434,7 +648,7 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         # Cache changes
         #
-        commit(change.redoIt, change.undoIt)
+        undo.commit(change.redoIt, change.undoIt)
 
     def ensureLoopable(self, animCurve, animationRange, change=None):
         """
@@ -482,7 +696,7 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
                 continue
 
-    @undo(name='Bake Range')
+    @undo.Undo(name='Bake Range')
     def bakeRange(self, nodes, loopRange):
         """
         Bakes the specified loop-range to the rest of the animation-range.
@@ -554,9 +768,9 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         # Cache changes
         #
-        commit(change.redoIt, change.undoIt)
+        undo.commit(change.redoIt, change.undoIt)
 
-    @undo(name='Bake Out-Of-Range')
+    @undo.Undo(name='Bake Out-Of-Range')
     def bakeOutOfRange(self, nodes, animationRange):
         """
         Bakes the infinity curves inside the specified animation-range.
@@ -629,7 +843,7 @@ class QLoopTab(qabstracttab.QAbstractTab):
 
         # Cache changes
         #
-        commit(change.redoIt, change.undoIt)
+        undo.commit(change.redoIt, change.undoIt)
     # endregion
 
     # region Slots
@@ -690,11 +904,11 @@ class QLoopTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        numLabels = len(self.__labels__)
+        numLabels = len(self.__bake_labels__)
 
         if 0 <= id < numLabels:
 
-            self.bakeLabel.setText(self.__labels__[id])
+            self.bakeLabel.setText(self.__bake_labels__[id])
 
         else:
 

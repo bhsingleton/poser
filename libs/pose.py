@@ -10,7 +10,7 @@ from dcc.collections import notifylist, notifydict
 from dcc.generators.inclusiverange import inclusiveRange
 from dcc.maya.libs import plugutils, plugmutators, transformutils, animutils
 from dcc.maya.json import melsonobject
-from dcc.maya.decorators.animate import animate
+from dcc.maya.decorators import animate
 
 import logging
 logging.basicConfig()
@@ -472,7 +472,7 @@ class Pose(melsonobject.MELSONObject):
 
                 pose.applyMatrix(node, **kwargs)
 
-    @animate(state=True)
+    @animate.Animate(state=True)
     def bakeTransformationsTo(self, *nodes, **kwargs):
         """
         Bakes the transform values to the supplied nodes.
@@ -489,7 +489,6 @@ class Pose(melsonobject.MELSONObject):
         # Evaluate bake method
         #
         preserveKeys = kwargs.get('preserveKeys', False)
-        preserveTangents = kwargs.get('preserveTangents', False)
 
         animationRange = kwargs.get('animationRange', self.animationRange)
         startTime, endTime = animationRange
@@ -1025,6 +1024,8 @@ class PoseNode(melsonobject.MELSONObject):
             #
             animCurve = node.findAnimCurve(plug, create=True)
             animCurve.setIsWeighted(attribute.weighted)
+            animCurve.setPreInfinityType(attribute.preInfinityType)
+            animCurve.setPostInfinityType(attribute.postInfinityType)
 
             if insertAt is not None:
 

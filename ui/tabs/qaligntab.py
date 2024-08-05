@@ -4,9 +4,10 @@ from maya.api import OpenMaya as om
 from mpy import mpyscene
 from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.ui import qrollout, qdivider, qtimespinbox, qxyzwidget, qseparator
+from dcc.ui.abstract import qabcmeta
 from dcc.python import stringutils
 from dcc.maya.libs import dagutils
-from dcc.maya.decorators.undo import undo
+from dcc.maya.decorators import undo
 from . import qabstracttab
 
 import logging
@@ -15,9 +16,9 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class QAlignRollout(qrollout.QRollout):
+class QAlignRollout(qrollout.QRollout, metaclass=qabcmeta.QABCMeta):
     """
-    Overload of QRollout used to align transforms over time.
+    Overload of `QRollout` that interfaces with alignment data.
     """
 
     # region Dunderscores
@@ -40,11 +41,16 @@ class QAlignRollout(qrollout.QRollout):
         self._sourceNode = None
         self._targetNode = None
 
-        # Build user interface
-        #
-        self.__build__()
+    def __post_init__(self, *args, **kwargs):
+        """
+        Private method called after an instance has initialized.
 
-    def __build__(self, *args, **kwargs):
+        :rtype: None
+        """
+
+        self.__setup_ui__()
+
+    def __setup_ui__(self, *args, **kwargs):
         """
         Private method that builds the user interface.
 
@@ -53,8 +59,10 @@ class QAlignRollout(qrollout.QRollout):
 
         # Assign vertical layout
         #
-        self.centralLayout = QtWidgets.QVBoxLayout()
-        self.setLayout(self.centralLayout)
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
+
+        self.setLayout(centralLayout)
 
         # Create node widgets
         #
@@ -63,6 +71,7 @@ class QAlignRollout(qrollout.QRollout):
         self.sourcePushButton.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
         self.sourcePushButton.setFixedHeight(20)
         self.sourcePushButton.setMinimumWidth(48)
+        self.sourcePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.sourcePushButton.setToolTip('Picks the node to align to.')
         self.sourcePushButton.clicked.connect(self.on_sourcePushButton_clicked)
 
@@ -70,6 +79,7 @@ class QAlignRollout(qrollout.QRollout):
         self.switchPushButton.setObjectName('switchPushButton')
         self.switchPushButton.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         self.switchPushButton.setFixedSize(QtCore.QSize(20, 20))
+        self.switchPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.switchPushButton.clicked.connect(self.on_switchPushButton_clicked)
 
         self.targetPushButton = QtWidgets.QPushButton('Child')
@@ -77,6 +87,7 @@ class QAlignRollout(qrollout.QRollout):
         self.targetPushButton.setSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
         self.targetPushButton.setFixedHeight(20)
         self.targetPushButton.setMinimumWidth(48)
+        self.targetPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
         self.targetPushButton.setToolTip('Picks the node to be aligned.')
         self.targetPushButton.clicked.connect(self.on_targetPushButton_clicked)
 
@@ -86,8 +97,8 @@ class QAlignRollout(qrollout.QRollout):
         self.buttonLayout.addWidget(self.switchPushButton)
         self.buttonLayout.addWidget(self.targetPushButton)
 
-        self.centralLayout.addLayout(self.buttonLayout)
-        self.centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
+        centralLayout.addLayout(self.buttonLayout)
+        centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
 
         # Create time range widgets
         #
@@ -95,6 +106,7 @@ class QAlignRollout(qrollout.QRollout):
         self.startCheckBox.setObjectName('startCheckBox')
         self.startCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.startCheckBox.setFixedHeight(20)
+        self.startCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
         self.startCheckBox.setChecked(True)
         self.startCheckBox.stateChanged.connect(self.on_startCheckBox_stateChanged)
 
@@ -104,7 +116,8 @@ class QAlignRollout(qrollout.QRollout):
         self.startSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.startSpinBox.setFixedHeight(20)
         self.startSpinBox.setMinimumWidth(20)
-        self.startSpinBox.setDefaultType(qtimespinbox.DefaultType.StartTime)
+        self.startSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.startSpinBox.setDefaultType(qtimespinbox.DefaultType.START_TIME)
         self.startSpinBox.setRange(-9999, 9999)
         self.startSpinBox.setValue(0)
 
@@ -112,6 +125,7 @@ class QAlignRollout(qrollout.QRollout):
         self.endCheckBox.setObjectName('endCheckBox')
         self.endCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.endCheckBox.setFixedHeight(20)
+        self.endCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
         self.endCheckBox.setChecked(True)
         self.endCheckBox.stateChanged.connect(self.on_endCheckBox_stateChanged)
 
@@ -121,16 +135,18 @@ class QAlignRollout(qrollout.QRollout):
         self.endSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.endSpinBox.setFixedHeight(20)
         self.endSpinBox.setMinimumWidth(20)
-        self.endSpinBox.setDefaultType(qtimespinbox.DefaultType.EndTime)
+        self.endSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.endSpinBox.setDefaultType(qtimespinbox.DefaultType.END_TIME)
         self.endSpinBox.setRange(-9999, 9999)
         self.endSpinBox.setValue(1)
 
-        self.stepSpinBox = QtWidgets.QSpinBox()
+        self.stepSpinBox = qtimespinbox.QTimeSpinBox()
         self.stepSpinBox.setObjectName('stepSpinBox')
-        self.stepSpinBox.setPrefix('Step: ')
+        self.stepSpinBox.setPrefix('Step(s): ')
         self.stepSpinBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.stepSpinBox.setFixedHeight(20)
         self.stepSpinBox.setMinimumWidth(20)
+        self.stepSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
         self.stepSpinBox.setRange(1, 100)
         self.stepSpinBox.setValue(1)
 
@@ -143,41 +159,44 @@ class QAlignRollout(qrollout.QRollout):
         self.timeRangeLayout.addWidget(qdivider.QDivider(QtCore.Qt.Vertical))
         self.timeRangeLayout.addWidget(self.stepSpinBox)
 
-        self.centralLayout.addLayout(self.timeRangeLayout)
-        self.centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
+        centralLayout.addLayout(self.timeRangeLayout)
+        centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
 
-        # Create match transform widgets
+        # Create align transform widgets
         #
-        self.matchTranslateWidget = qxyzwidget.QXyzWidget('Pos')
-        self.matchTranslateWidget.setObjectName('matchTranslateWidget')
-        self.matchTranslateWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.matchTranslateWidget.setFixedHeight(20)
-        self.matchTranslateWidget.setToolTip('Specify which translate axes should be aligned.')
-        self.matchTranslateWidget.setMatches([True, True, True])
+        self.alignTranslateXYZWidget = qxyzwidget.QXyzWidget('Pos')
+        self.alignTranslateXYZWidget.setObjectName('alignTranslateXYZWidget')
+        self.alignTranslateXYZWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.alignTranslateXYZWidget.setFixedHeight(20)
+        self.alignTranslateXYZWidget.setStyleSheet('QPushButton:hover:checked { background-color: green; }\nQPushButton:checked { background-color: darkgreen; border: none; }')
+        self.alignTranslateXYZWidget.setToolTip('Specify which translate axes should be aligned.')
+        self.alignTranslateXYZWidget.setCheckStates([True, True, True])
 
-        self.matchRotateWidget = qxyzwidget.QXyzWidget('Rot')
-        self.matchRotateWidget.setObjectName('matchRotateWidget')
-        self.matchRotateWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.matchRotateWidget.setFixedHeight(20)
-        self.matchRotateWidget.setToolTip('Specify which rotate axes should be aligned.')
-        self.matchRotateWidget.setMatches([True, True, True])
+        self.alignRotateXYZWidget = qxyzwidget.QXyzWidget('Rot')
+        self.alignRotateXYZWidget.setObjectName('alignRotateXYZWidget')
+        self.alignRotateXYZWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.alignRotateXYZWidget.setFixedHeight(20)
+        self.alignRotateXYZWidget.setStyleSheet('QPushButton:hover:checked { background-color: green; }\nQPushButton:checked { background-color: darkgreen; border: none; }')
+        self.alignRotateXYZWidget.setToolTip('Specify which rotate axes should be aligned.')
+        self.alignRotateXYZWidget.setCheckStates([True, True, True])
 
-        self.matchScaleWidget = qxyzwidget.QXyzWidget('Scale')
-        self.matchScaleWidget.setObjectName('matchScaleWidget')
-        self.matchScaleWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        self.matchScaleWidget.setFixedHeight(20)
-        self.matchScaleWidget.setToolTip('Specify which scale axes should be aligned.')
-        self.matchScaleWidget.setMatches([False, False, False])
+        self.alignScaleXYZWidget = qxyzwidget.QXyzWidget('Scale')
+        self.alignScaleXYZWidget.setObjectName('alignScaleXYZWidget')
+        self.alignScaleXYZWidget.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.alignScaleXYZWidget.setFixedHeight(20)
+        self.alignScaleXYZWidget.setStyleSheet('QPushButton:hover:checked { background-color: green; }\nQPushButton:checked { background-color: darkgreen; border: none; }')
+        self.alignScaleXYZWidget.setToolTip('Specify which scale axes should be aligned.')
+        self.alignScaleXYZWidget.setCheckStates([False, False, False])
 
-        self.matchLayout = QtWidgets.QHBoxLayout()
-        self.matchLayout.setObjectName('matchLayout')
-        self.matchLayout.setContentsMargins(0, 0, 0, 0)
-        self.matchLayout.addWidget(self.matchTranslateWidget)
-        self.matchLayout.addWidget(self.matchRotateWidget)
-        self.matchLayout.addWidget(self.matchScaleWidget)
+        self.alignLayout = QtWidgets.QHBoxLayout()
+        self.alignLayout.setObjectName('alignLayout')
+        self.alignLayout.setContentsMargins(0, 0, 0, 0)
+        self.alignLayout.addWidget(self.alignTranslateXYZWidget)
+        self.alignLayout.addWidget(self.alignRotateXYZWidget)
+        self.alignLayout.addWidget(self.alignScaleXYZWidget)
 
-        self.centralLayout.addLayout(self.matchLayout)
-        self.centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
+        centralLayout.addLayout(self.alignLayout)
+        centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
 
         # Create maintain offset widgets
         #
@@ -191,16 +210,19 @@ class QAlignRollout(qrollout.QRollout):
         self.maintainTranslateCheckBox.setObjectName('maintainTranslateCheckBox')
         self.maintainTranslateCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.maintainTranslateCheckBox.setFixedHeight(20)
+        self.maintainTranslateCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
 
         self.maintainRotateCheckBox = QtWidgets.QCheckBox('Rotation')
         self.maintainRotateCheckBox.setObjectName('maintainRotateCheckBox')
         self.maintainRotateCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.maintainRotateCheckBox.setFixedHeight(20)
+        self.maintainRotateCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
 
         self.maintainScaleCheckBox = QtWidgets.QCheckBox('Scale')
         self.maintainScaleCheckBox.setObjectName('maintainScaleCheckBox')
         self.maintainScaleCheckBox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         self.maintainScaleCheckBox.setFixedHeight(20)
+        self.maintainScaleCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
 
         self.maintainLayout = QtWidgets.QHBoxLayout()
         self.maintainLayout.setObjectName('maintainLayout')
@@ -209,7 +231,7 @@ class QAlignRollout(qrollout.QRollout):
         self.maintainLayout.addWidget(self.maintainRotateCheckBox)
         self.maintainLayout.addWidget(self.maintainScaleCheckBox)
 
-        self.centralLayout.addLayout(self.maintainLayout)
+        centralLayout.addLayout(self.maintainLayout)
 
         # Insert additional menu actions
         #
@@ -242,9 +264,9 @@ class QAlignRollout(qrollout.QRollout):
             'startTime': self.startTime,
             'endTime': self.endTime,
             'step': self.step,
-            'matchTranslate': self.matchTranslate,
-            'matchRotate': self.matchRotate,
-            'matchScale': self.matchScale,
+            'alignTranslate': self.alignTranslate,
+            'alignRotate': self.alignRotate,
+            'alignScale': self.alignScale,
             'maintainTranslate': self.maintainTranslate,
             'maintainRotate': self.maintainRotate,
             'maintainScale': self.maintainScale
@@ -265,9 +287,9 @@ class QAlignRollout(qrollout.QRollout):
         self.startTime = state.get('startTime', 0)
         self.endTime = state.get('endTime', 1)
         self.step = state.get('step', 1)
-        self.matchTranslate = state.get('matchTranslate', [True, True, True])
-        self.matchRotate = state.get('matchRotate', [True, True, True])
-        self.matchScale = state.get('matchScale', [False, False, False])
+        self.alignTranslate = state.get('alignTranslate', [True, True, True])
+        self.alignRotate = state.get('alignRotate', [True, True, True])
+        self.alignScale = state.get('alignScale', [False, False, False])
         self.maintainTranslate = (state.get('maintainTranslate', False))
         self.maintainRotate = (state.get('maintainRotate', False))
         self.maintainScale = (state.get('maintainScale', False))
@@ -422,64 +444,67 @@ class QAlignRollout(qrollout.QRollout):
         self.stepSpinBox.setValue(step)
 
     @property
-    def matchTranslate(self):
+    def alignTranslate(self):
         """
-        Getter method that returns the match translate flag.
+        Getter method that returns the translate alignment flags.
 
-        :rtype: List[bool, bool, bool]
-        """
-
-        return self.matchTranslateWidget.matches()
-
-    @matchTranslate.setter
-    def matchTranslate(self, matchTranslate):
-        """
-        Setter method that updates the match translate flag.
-
-        :rtype: List[bool, bool, bool]
+        :rtype: Tuple[bool, bool, bool]
         """
 
-        self.matchTranslateWidget.setMatches(matchTranslate)
+        return self.alignTranslateXYZWidget.checkStates()
+
+    @alignTranslate.setter
+    def alignTranslate(self, alignTranslate):
+        """
+        Setter method that updates the translate alignment flags.
+
+        :type alignTranslate: Tuple[bool, bool, bool]
+        :rtype: None
+        """
+
+        self.alignTranslateXYZWidget.setCheckStates(alignTranslate)
 
     @property
-    def matchRotate(self):
+    def alignRotate(self):
         """
-        Getter method that returns the match rotate flag.
+        Getter method that returns the rotate alignment flags.
 
-        :rtype: List[bool, bool, bool]
-        """
-
-        return self.matchRotateWidget.matches()
-
-    @matchRotate.setter
-    def matchRotate(self, matchRotate):
-        """
-        Setter method that updates the match rotate flag.
-
-        :rtype: List[bool, bool, bool]
+        :rtype: Tuple[bool, bool, bool]
         """
 
-        self.matchRotateWidget.setMatches(matchRotate)
+        return self.alignRotateXYZWidget.checkStates()
+
+    @alignRotate.setter
+    def alignRotate(self, alignRotate):
+        """
+        Setter method that updates the rotate alignment flags.
+
+        :type alignRotate: Tuple[bool, bool, bool]
+        :rtype: None
+        """
+
+        self.alignRotateXYZWidget.setCheckStates(alignRotate)
 
     @property
-    def matchScale(self):
+    def alignScale(self):
         """
-        Getter method that returns the match scale flag.
+        Getter method that returns the scale alignment flags.
 
-        :rtype: List[bool, bool, bool]
-        """
-
-        return self.matchScaleWidget.matches()
-
-    @matchScale.setter
-    def matchScale(self, matchScale):
-        """
-        Setter method that updates the match scale flag.
-
-        :rtype: List[bool, bool, bool]
+        :rtype: Tuple[bool, bool, bool]
         """
 
-        self.matchScaleWidget.setMatches(matchScale)
+        return self.alignScaleXYZWidget.checkStates()
+
+    @alignScale.setter
+    def alignScale(self, alignScale):
+        """
+        Setter method that updates the scale alignment flags.
+
+        :type alignScale: Tuple[bool, bool, bool]
+        :rtype: None
+        """
+
+        self.alignScaleXYZWidget.setCheckStates(alignScale)
 
     @property
     def maintainTranslate(self):
@@ -496,7 +521,8 @@ class QAlignRollout(qrollout.QRollout):
         """
         Setter method that updates the `maintainTranslate` flag.
 
-        :rtype: bool
+        :type maintainTranslate: bool
+        :rtype: None
         """
 
         self.maintainTranslateCheckBox.setChecked(maintainTranslate)
@@ -516,7 +542,8 @@ class QAlignRollout(qrollout.QRollout):
         """
         Setter method that updates the `maintainRotate` flag.
 
-        :rtype: bool
+        :type maintainRotate: bool
+        :rtype: None
         """
 
         self.maintainRotateCheckBox.setChecked(maintainRotate)
@@ -536,7 +563,8 @@ class QAlignRollout(qrollout.QRollout):
         """
         Setter method that updates the `maintainScale` flag.
 
-        :rtype: bool
+        :type maintainScale: bool
+        :rtype: None
         """
 
         self.maintainScaleCheckBox.setChecked(maintainScale)
@@ -584,9 +612,9 @@ class QAlignRollout(qrollout.QRollout):
 
         # Collect skip flags
         #
-        skipTranslateX, skipTranslateY, skipTranslateZ = (not x for x in self.matchTranslate)
-        skipRotateX, skipRotateY, skipRotateZ = (not x for x in self.matchRotate)
-        skipScaleX, skipScaleY, skipScaleZ = (not x for x in self.matchScale)
+        skipTranslate = self.alignTranslateXYZWidget.flags(prefix='skipTranslate', inverse=True)
+        skipRotate = self.alignRotateXYZWidget.flags(prefix='skipRotate', inverse=True)
+        skipScale = self.alignScaleXYZWidget.flags(prefix='skipScale', inverse=True)
 
         # Iterate through time range
         #
@@ -596,10 +624,12 @@ class QAlignRollout(qrollout.QRollout):
         targetNode.alignTransformTo(
             sourceNode,
             startTime=self.startTime, endTime=self.endTime, step=self.step,
-            maintainTranslate=self.maintainTranslate, maintainRotate=self.maintainRotate, maintainScale=self.maintainScale,
-            skipTranslateX=skipTranslateX, skipTranslateY=skipTranslateY, skipTranslateZ=skipTranslateZ,
-            skipRotateX=skipRotateX, skipRotateY=skipRotateY, skipRotateZ=skipRotateZ,
-            skipScaleX=skipScaleX, skipScaleY=skipScaleY, skipScaleZ=skipScaleZ
+            maintainTranslate=self.maintainTranslate,
+            maintainRotate=self.maintainRotate,
+            maintainScale=self.maintainScale,
+            **skipTranslate,
+            **skipRotate,
+            **skipScale
         )
     # endregion
 
@@ -690,28 +720,55 @@ class QAlignRollout(qrollout.QRollout):
 
 class QAlignTab(qabstracttab.QAbstractTab):
     """
-    Overload of `QAbstractTab` that aligns controls over a time duration.
+    Overload of `QAbstractTab` that aligns controls over a time interval.
     """
 
     # region Dunderscores
-    def __init__(self, *args, **kwargs):
+    def __setup_ui__(self, *args, **kwargs):
         """
-        Private method called after a new instance has been created.
+        Private method that initializes the user interface.
 
-        :key parent: QtWidgets.QWidget
-        :key flags: QtCore.Qt.WindowFlags
         :rtype: None
         """
 
-        # Call parent method
+        # Initialize central layout
         #
-        super(QAlignTab, self).__init__(*args, **kwargs)
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
+
+        self.setLayout(centralLayout)
 
         # Declare public variables
         #
-        self.alignPushButton = None
-        self.scrollArea = None
-        self.scrollAreaContents = None
+        self.scrollAreaContentLayout = QtWidgets.QVBoxLayout()
+        self.scrollAreaContentLayout.setObjectName('scrollAreaContentLayout')
+        self.scrollAreaContentLayout.setContentsMargins(0, 0, 0, 0)
+        self.scrollAreaContentLayout.setSpacing(4)
+        self.scrollAreaContentLayout.setAlignment(QtCore.Qt.AlignTop)
+
+        self.scrollAreaContent = QtWidgets.QWidget()
+        self.scrollAreaContent.setObjectName('scrollAreaContent')
+        self.scrollAreaContent.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.scrollAreaContent.setLayout(self.scrollAreaContentLayout)
+
+        self.scrollArea = QtWidgets.QScrollArea()
+        self.scrollArea.setObjectName('scrollArea')
+        self.scrollArea.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.scrollArea.setFrameShape(QtWidgets.QFrame.NoFrame)
+        self.scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setWidget(self.scrollAreaContent)
+
+        self.alignPushButton = QtWidgets.QPushButton('Align')
+        self.alignPushButton.setObjectName('alignPushButton')
+        self.alignPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.alignPushButton.setFixedHeight(48)
+        self.alignPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.alignPushButton.clicked.connect(self.on_alignPushButton_clicked)
+
+        centralLayout.addWidget(self.scrollArea)
+        centralLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal))
+        centralLayout.addWidget(self.alignPushButton)
     # endregion
 
     # region Callback
@@ -755,26 +812,6 @@ class QAlignTab(qabstracttab.QAbstractTab):
     # endregion
 
     # region Methods
-    def postLoad(self, *args, **kwargs):
-        """
-        Called after the user interface has been loaded.
-
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QAlignTab, self).postLoad(*args, **kwargs)
-
-        # Initialize scroll area layout
-        #
-        layout = QtWidgets.QVBoxLayout()
-        layout.setAlignment(QtCore.Qt.AlignTop)
-        layout.setSpacing(4)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.scrollAreaContents.setLayout(layout)
-
     def loadSettings(self, settings):
         """
         Loads the user settings.
@@ -802,7 +839,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
         :rtype: int
         """
 
-        return self.scrollAreaContents.layout().count()
+        return self.scrollAreaContent.layout().count()
 
     def evaluateNumAlignments(self):
         """
@@ -823,7 +860,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
 
         # Iterate through layout items
         #
-        layout = self.scrollAreaContents.layout()
+        layout = self.scrollAreaContent.layout()
         numItems = layout.count()
 
         for i in range(numItems):
@@ -869,7 +906,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
         rollout.addAlignmentAction.triggered.connect(self.on_addAlignmentAction_triggered)
         rollout.removeAlignmentAction.triggered.connect(self.on_removeAlignmentAction_triggered)
 
-        self.scrollAreaContents.layout().addWidget(rollout)
+        self.scrollAreaContent.layout().addWidget(rollout)
 
         return rollout
 
@@ -882,7 +919,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
 
         # Remove layout items in reverse
         #
-        layout = self.scrollAreaContents.layout()
+        layout = self.scrollAreaContent.layout()
         numItems = layout.count()
 
         for i in reversed(range(numItems)):
@@ -890,7 +927,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
             item = layout.takeAt(i)
             item.widget().deleteLater()
 
-    @undo(name='Align Transforms')
+    @undo.Undo(name='Align Transforms')
     def align(self):
         """
         Executes any active alignments.

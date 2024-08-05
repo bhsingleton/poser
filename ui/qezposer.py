@@ -8,13 +8,14 @@ from six import string_types, integer_types
 from fnmatch import fnmatchcase
 from itertools import chain
 from dcc.python import stringutils
-from dcc.ui import quicwindow
+from dcc.ui import qsingletonwindow
+from dcc.maya.libs import hotkeyutils
 from dcc.decorators.staticinitializer import staticInitializer
 from dcc.decorators.classproperty import classproperty
-from dcc.maya.decorators.undo import undo
+from dcc.maya.decorators import undo
 from . import resources
-from ..libs import rigutils
-from ..libs import rigconfiguration
+from .tabs import qlibrarytab, qplottertab, qaligntab, qlooptab
+from ..libs import rigutils, rigconfiguration
 
 import logging
 logging.basicConfig()
@@ -48,35 +49,8 @@ def onSceneChanged(*args, **kwargs):
         log.warning('Unable to process scene changed callback!')
 
 
-def selectControls(visible=False):
-    """
-    Selects animatable controls using the current rig configuration.
-
-    :type visible: bool
-    :rtype: None
-    """
-
-    # Check if instance exists
-    #
-    instance = QEzPoser.getInstance()
-
-    if instance is None:
-
-        return
-
-    # Evaluate if instance is still valid
-    #
-    if QtCompat.isValid(instance):
-
-        instance.selectControls(visible=visible)
-
-    else:
-
-        log.warning('Unable to process scene changed callback!')
-
-
 @staticInitializer
-class QEzPoser(quicwindow.QUicWindow):
+class QEzPoser(qsingletonwindow.QSingletonWindow):
     """
     Overload of `QUicWindow` used to edit poses when animating.
     """
@@ -107,14 +81,18 @@ class QEzPoser(quicwindow.QUicWindow):
         # Load rig configurations
         #
         settings = cls.getSettings()
-        configIndex = settings.value('editor/currentConfiguration', defaultValue=-1)
+        configIndex = settings.value('editor/currentConfiguration', defaultValue=-1, type=int)
 
         cls.__configurations__ = rigutils.loadConfigurations()
         cls.__configuration__ = cls.__configurations__[configIndex]
 
         # Load user namespaces
         #
-        cls.__namespace__ = settings.value('editor/customNamespace', defaultValue='')
+        cls.__namespace__ = settings.value('editor/customNamespace', defaultValue='', type=str)
+
+        # Install runtime commands
+        #
+        cls.installRuntimeCommands()
 
     def __init__(self, *args, **kwargs):
         """
@@ -132,113 +110,78 @@ class QEzPoser(quicwindow.QUicWindow):
         # Declare private variables
         #
         self._cwd = kwargs.get('cwd', self.scene.projectPath)
-        self._callbackId = None
+        self._callbackIds = om.MCallbackIdArray()
 
-        # Declare public variables
-        #
-        self.tabControl = None
-        self.libraryTab = None
-        self.plotterTab = None
-        self.alignTab = None
-        self.mocapTab = None
-
-        self.fileMenu = None
-        self.setProjectFolderAction = None
-
-        self.settingsMenu = None
-        self.changeRigConfigurationAction = None
-        self.rigConfigurationAction = None
-        self.mirrorAxisSection = None
-        self.xAxisAction = None
-        self.yAxisAction = None
-        self.zAxisAction = None
-        self.mirrorAxisActionGroup = None
-        self.detectMirroringAction = None
-        self.namespaceSection = None
-        self.defaultNamespaceAction = None
-        self.namespaceActionGroup = None
-        self.namespaceSeparator = None
-
-        self.helpMenu = None
-        self.usingEzPoserAction = None
-    # endregion
-
-    # region Properties
-    @classproperty
-    def scene(cls):
+    def __setup_ui__(self, *args, **kwargs):
         """
-        Returns the scene interface.
-
-        :rtype: mpyscene.MPyScene
-        """
-
-        return cls.__scene__()
-
-    @classproperty
-    def configurations(cls):
-        """
-        Returns a list of active rig configurations.
-
-        :rtype: List[rigconfiguration.RigConfiguration]
-        """
-
-        return cls.__configurations__
-    # endregion
-
-    # region Callbacks
-    def sceneChanged(self, *args, **kwargs):
-        """
-        Notifies all tabs of a scene change.
-
-        :key clientData: Any
-        :rtype: None
-        """
-
-        for tab in self.iterTabs():
-
-            tab.sceneChanged()
-    # endregion
-
-    # region Events
-    def closeEvent(self, event):
-        """
-        Event method called after the window has been closed.
-
-        :type event: QtGui.QCloseEvent
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QEzPoser, self).closeEvent(event)
-
-        # Remove scene callback
-        #
-        om.MSceneMessage.removeCallback(self._callbackId)
-    # endregion
-
-    # region Methods
-    def postLoad(self, *args, **kwargs):
-        """
-        Called after the user interface has been loaded.
+        Private method that initializes the user interface.
 
         :rtype: None
         """
 
         # Call parent method
         #
-        super(QEzPoser, self).postLoad(*args, **kwargs)
+        super(QEzPoser, self).__setup_ui__(self, *args, **kwargs)
 
-        # Add file menu actions
+        # Initialize main window
         #
+        self.setWindowTitle("|| Ez'Poser")
+        self.setMinimumSize(QtCore.QSize(300, 500))
+
+        # Initialize central widget
+        #
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
+
+        centralWidget = QtWidgets.QWidget(parent=self)
+        centralWidget.setObjectName('centralWidget')
+        centralWidget.setLayout(centralLayout)
+
+        self.setCentralWidget(centralWidget)
+
+        # Initialize tab-control
+        #
+        self.tabControl = QtWidgets.QTabWidget(parent=self)
+        self.tabControl.setObjectName('tabControl')
+        self.tabControl.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+
+        self.libraryTab = qlibrarytab.QLibraryTab(parent=self.tabControl)
+        self.plotterTab = qplottertab.QPlotterTab(parent=self.tabControl)
+        self.alignTab = qaligntab.QAlignTab(parent=self.tabControl)
+        self.loopTab = qlooptab.QLoopTab(parent=self.tabControl)
+
+        self.tabControl.addTab(self.libraryTab, 'Library')
+        self.tabControl.addTab(self.plotterTab, 'Plotter')
+        self.tabControl.addTab(self.alignTab, 'Align')
+        self.tabControl.addTab(self.loopTab, 'Loop')
+
+        self.cwdChanged.connect(self.libraryTab.fileItemModel.setCwd)
+
+        centralLayout.addWidget(self.tabControl)
+
+        # Initialize main menu-bar
+        #
+        mainMenuBar = QtWidgets.QMenuBar()
+        mainMenuBar.setObjectName('mainMenuBar')
+
+        self.setMenuBar(mainMenuBar)
+
+        # Initialize file menu
+        #
+        self.fileMenu = mainMenuBar.addMenu('&File')
+        self.fileMenu.setObjectName('fileMenu')
+
         self.setProjectFolderAction = QtWidgets.QAction('Set Project Folder', parent=self.fileMenu)
         self.setProjectFolderAction.setObjectName('setProjectFolderAction')
         self.setProjectFolderAction.triggered.connect(self.on_setProjectFolderAction_triggered)
 
         self.fileMenu.addAction(self.setProjectFolderAction)
 
-        # Add settings menu actions
+        # Initialize settings menu
         #
+        self.settingsMenu = mainMenuBar.addMenu('&Settings')
+        self.settingsMenu.setObjectName('settingsMenu')
+
         self.rigConfigurationAction = QtWidgets.QAction('Rig:', parent=self.settingsMenu)
         self.rigConfigurationAction.setObjectName('rigConfigurationAction')
         self.rigConfigurationAction.setEnabled(False)
@@ -303,18 +246,90 @@ class QEzPoser(quicwindow.QUicWindow):
 
         self.settingsMenu.aboutToShow.connect(self.on_settingsMenu_aboutToShow)
 
-        # Add help menu actions
+        # Initialize help menu
         #
-        self.usingEzPoserAction = QtWidgets.QAction("Using Ez'Poser", parent=self.settingsMenu)
+        self.helpMenu = mainMenuBar.addMenu('&Help')
+        self.helpMenu.setObjectName('helpMenu')
+
+        self.usingEzPoserAction = QtWidgets.QAction("Using Ez'Poser", parent=self.helpMenu)
         self.usingEzPoserAction.setObjectName('usingEzPoserAction')
         self.usingEzPoserAction.triggered.connect(self.on_usingEzPoserAction_triggered)
 
         self.helpMenu.addAction(self.usingEzPoserAction)
+    # endregion
 
-        # Register scene change callback
+    # region Properties
+    @classproperty
+    def scene(cls):
+        """
+        Returns the scene interface.
+
+        :rtype: mpyscene.MPyScene
+        """
+
+        return cls.__scene__()
+
+    @classproperty
+    def configurations(cls):
+        """
+        Returns a list of active rig configurations.
+
+        :rtype: List[rigconfiguration.RigConfiguration]
+        """
+
+        return cls.__configurations__
+    # endregion
+
+    # region Callbacks
+    def sceneChanged(self, *args, **kwargs):
+        """
+        Notifies all tabs of a scene change.
+
+        :key clientData: Any
+        :rtype: None
+        """
+
+        for tab in self.iterTabs():
+
+            tab.sceneChanged()
+    # endregion
+
+    # region Methods
+    def addCallbacks(self):
+        """
+        Adds any callbacks required by this window.
+
+        :rtype: None
+        """
+
+        # Add callbacks
         #
-        self._callbackId = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneChanged)
+        hasCallbacks = len(self._callbackIds) > 0
+
+        if not hasCallbacks:
+
+            callbackId = om.MSceneMessage.addCallback(om.MSceneMessage.kAfterOpen, onSceneChanged)
+            self._callbackIds.append(callbackId)
+
+        # Force scene update
+        #
         self.sceneChanged()
+
+    def removeCallbacks(self):
+        """
+        Removes any callbacks created by this window.
+
+        :rtype: None
+        """
+
+        # Remove callbacks
+        #
+        hasCallbacks = len(self._callbackIds) > 0
+
+        if hasCallbacks:
+
+            om.MMessage.removeCallbacks(self._callbackIds)
+            self._callbackIds.clear()
 
     def loadSettings(self, settings):
         """
@@ -330,10 +345,10 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Load user preferences
         #
-        self.tabControl.setCurrentIndex(settings.value('editor/currentTabIndex', defaultValue=0))
-        self.setCwd(settings.value('editor/cwd', defaultValue=self.scene.projectPath))
-        self.setCurrentConfiguration(settings.value('editor/currentConfiguration', defaultValue=-1))
-        self.setCurrentAxis(settings.value('editor/currentAxis', defaultValue=0))
+        self.tabControl.setCurrentIndex(settings.value('editor/currentTabIndex', defaultValue=0, type=int))
+        self.setCwd(settings.value('editor/cwd', defaultValue=self.scene.projectPath, type=str))
+        self.setCurrentConfiguration(settings.value('editor/currentConfiguration', defaultValue=-1, type=int))
+        self.setCurrentAxis(settings.value('editor/currentAxis', defaultValue=0, type=int))
 
         # Load tab settings
         #
@@ -366,6 +381,19 @@ class QEzPoser(quicwindow.QUicWindow):
         for tab in self.iterTabs():
 
             tab.saveSettings(settings)
+
+    @classmethod
+    def installRuntimeCommands(cls):
+        """
+        Installs the runtime-commands for Ez'Poser.
+
+        :rtype: None
+        """
+
+        directory = os.path.abspath(os.path.dirname(__file__))
+        filePath = os.path.abspath(os.path.join(directory, '..', 'hotkeys', 'ezposer.json'))
+
+        hotkeyutils.installRuntimeCommandsFromFile(filePath)
 
     def currentTab(self):
         """
@@ -567,7 +595,8 @@ class QEzPoser(quicwindow.QUicWindow):
 
             return lastIndex  # Send to end of list...
 
-    def getSelection(self, sort=False):
+    @classmethod
+    def getSelection(cls, sort=False):
         """
         Returns the active selection.
         If no nodes are selected then the controller patterns are queried instead!
@@ -578,12 +607,12 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Evaluate active selection
         #
-        selection = self.scene.selection(apiType=om.MFn.kTransform)
+        selection = cls.scene.selection(apiType=om.MFn.kTransform)
         selectionCount = len(selection)
 
         if selectionCount == 0:
 
-            selection = self.getControls()
+            selection = cls.getControls()
 
         # Check if selection requires sorting
         #
@@ -670,7 +699,8 @@ class QEzPoser(quicwindow.QUicWindow):
 
         return namespaces
 
-    def iterControls(self, visible=False):
+    @classmethod
+    def iterControls(cls, visible=False):
         """
         Returns a generator that yields controls from the scene.
 
@@ -680,10 +710,10 @@ class QEzPoser(quicwindow.QUicWindow):
 
         # Iterate through nodes
         #
-        namespace = self.currentNamespace()
-        patterns = [f'{namespace}:{pattern}' for pattern in self.controllerPatterns()]
+        namespace = cls.currentNamespace()
+        patterns = [f'{namespace}:{pattern}' for pattern in cls.controllerPatterns()]
 
-        for node in self.scene.iterNodesByPattern(*patterns, apiType=om.MFn.kTransform):
+        for node in cls.scene.iterNodesByPattern(*patterns, apiType=om.MFn.kTransform):
 
             # Check if this is a constraint
             #
@@ -703,7 +733,8 @@ class QEzPoser(quicwindow.QUicWindow):
             #
             yield node
 
-    def getControls(self, visible=False):
+    @classmethod
+    def getControls(cls, visible=False):
         """
         Returns a list of controls from the scene.
 
@@ -711,10 +742,11 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: Iterator[mpynode.MPyNode]
         """
 
-        return list(self.iterControls(visible=visible))
+        return list(cls.iterControls(visible=visible))
 
-    @undo(state=False)
-    def selectControls(self, visible=False):
+    @classmethod
+    @undo.Undo(state=False)
+    def selectControls(cls, visible=False):
         """
         Selects any controls that match the active controller patterns.
 
@@ -722,10 +754,11 @@ class QEzPoser(quicwindow.QUicWindow):
         :rtype: None
         """
 
-        nodes = [node.object() for node in self.iterControls(visible=visible)]
-        self.scene.setSelection(nodes)
+        nodes = [node.object() for node in cls.iterControls(visible=visible)]
+        cls.scene.setSelection(nodes)
 
-    @undo(state=False)
+    @classmethod
+    @undo.Undo(state=False)
     def selectAssociatedControls(self):
         """
         Selects any controls that are in the same display layer.
@@ -739,7 +772,8 @@ class QEzPoser(quicwindow.QUicWindow):
 
         self.scene.setSelection(nodes)
 
-    @undo(state=False)
+    @classmethod
+    @undo.Undo(state=False)
     def selectOppositeControls(self, replace=True):
         """
         Selects the opposite nodes from the active selection.

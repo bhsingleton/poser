@@ -1,8 +1,8 @@
 from Qt import QtCore, QtWidgets, QtGui
 from maya.api import OpenMaya as om
 from dcc.python import stringutils
-from dcc.ui import qtimespinbox
-from dcc.maya.decorators.undo import undo, commit
+from dcc.ui import qtimespinbox, qdivider
+from dcc.maya.decorators import undo
 from . import qabstracttab
 from ...libs import poseutils
 
@@ -35,45 +35,337 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         #
         self._guides = []
 
-        # Declare public variables
+    def __setup_ui__(self, *args, **kwargs):
+        """
+        Private method that initializes the user interface.
+
+        :rtype: None
+        """
+
+        # Initialize central layout
         #
-        self.guideGroupBox = None
-        self.nameLineEdit = None
-        self.guideTreeView = None
-        self.guideItemModel = None
-        self.interopWidget = None
-        self.createGuidePushButton = None
-        self.removeGuidePushButton = None
-        self.importGuidePushButton = None
-        self.exportGuidePushButton = None
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
 
-        self.settingsGroupBox = None
-        self.animationRangeWidget = None
-        self.startTimeWidget = None
-        self.startTimeCheckBox = None
-        self.startTimeSpinBox = None
-        self.endTimeWidget = None
-        self.endTimeCheckBox = None
-        self.endTimeSpinBox = None
-        self.matchWidget = None
-        self.matchTranslateCheckBox = None
-        self.matchRotateCheckBox = None
-        self.matchScaleCheckBox = None
-        self.matchButtonGroup = None
-        self.keyframeWidget = None
-        self.bakeKeysRadioButton = None
-        self.preserveKeysRadioButton = None
-        self.plotButtonGroup = None
-        self.stepWidget = None
-        self.stepCheckBox = None
-        self.stepSpinBox = None
-        self.snapKeysCheckBox = None
+        self.setLayout(centralLayout)
 
-        self.plotGuidePushButton = None
+        # Initialize guides group-box
+        #
+        self.guidesLayout = QtWidgets.QGridLayout()
+        self.guidesLayout.setObjectName('guidesLayout')
 
-        self.guideAction = None
-        self.removeGuideAction = None
-        self.selectGuideAction = None
+        self.guidesGroupBox = QtWidgets.QGroupBox('Guides:')
+        self.guidesGroupBox.setObjectName('guidesGroupBox')
+        self.guidesGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.guidesGroupBox.setLayout(self.guidesLayout)
+
+        self.nameLineEdit = QtWidgets.QLineEdit()
+        self.nameLineEdit.setObjectName('nameLineEdit')
+        self.nameLineEdit.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.nameLineEdit.setFixedHeight(24)
+        self.nameLineEdit.returnPressed.connect(self.on_nameLineEdit_returnPressed)
+
+        self.guideTreeView = QtWidgets.QTreeView()
+        self.guideTreeView.setObjectName('guideTreeView')
+        self.guideTreeView.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.guideTreeView.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.guideTreeView.setStyleSheet('QTreeView::item { height: 24px; }')
+        self.guideTreeView.setAlternatingRowColors(True)
+        self.guideTreeView.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        self.guideTreeView.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.guideTreeView.setUniformRowHeights(True)
+        self.guideTreeView.setItemsExpandable(True)
+        self.guideTreeView.setAnimated(True)
+        self.guideTreeView.setHeaderHidden(True)
+
+        self.guideItemModel = QtGui.QStandardItemModel(0, 1, parent=self.guideTreeView)
+        self.guideItemModel.setObjectName('guideItemModel')
+        self.guideItemModel.setHorizontalHeaderLabels(['Name'])
+
+        self.guideTreeView.setModel(self.guideItemModel)
+
+        self.guideSelectionModel = self.guideTreeView.selectionModel()
+        self.guideSelectionModel.selectionChanged.connect(self.on_guideTreeView_selectionChanged)
+
+        self.createGuidePushButton = QtWidgets.QPushButton('Create')
+        self.createGuidePushButton.setObjectName('createGuidePushButton')
+        self.createGuidePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.createGuidePushButton.setFixedHeight(24)
+        self.createGuidePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.createGuidePushButton.clicked.connect(self.on_createGuidePushButton_clicked)
+
+        self.removeGuidePushButton = QtWidgets.QPushButton('Remove')
+        self.removeGuidePushButton.setObjectName('removeGuidePushButton')
+        self.removeGuidePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.removeGuidePushButton.setFixedHeight(24)
+        self.removeGuidePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.removeGuidePushButton.clicked.connect(self.on_removeGuidePushButton_clicked)
+
+        self.importGuidePushButton = QtWidgets.QPushButton('Import')
+        self.importGuidePushButton.setObjectName('importGuidePushButton')
+        self.importGuidePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.importGuidePushButton.setFixedHeight(24)
+        self.importGuidePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.importGuidePushButton.clicked.connect(self.on_importGuidePushButton_clicked)
+
+        self.exportGuidePushButton = QtWidgets.QPushButton('Export')
+        self.exportGuidePushButton.setObjectName('exportGuidePushButton')
+        self.exportGuidePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.exportGuidePushButton.setFixedHeight(24)
+        self.exportGuidePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.exportGuidePushButton.clicked.connect(self.on_exportGuidePushButton_clicked)
+
+        self.guidesLayout.addWidget(self.nameLineEdit, 0, 0, 1, 2)
+        self.guidesLayout.addWidget(self.guideTreeView, 1, 0, 1, 2)
+        self.guidesLayout.addWidget(self.createGuidePushButton, 2, 0)
+        self.guidesLayout.addWidget(self.removeGuidePushButton, 2, 1)
+        self.guidesLayout.addWidget(self.importGuidePushButton, 3, 0)
+        self.guidesLayout.addWidget(self.exportGuidePushButton, 3, 1)
+
+        centralLayout.addWidget(self.guidesGroupBox)
+
+        # Initialize line-edit actions
+        #
+        self.guideAction = QtWidgets.QAction(QtGui.QIcon(':/animateSnapshot.png'), '', parent=self.nameLineEdit)
+        self.guideAction.setObjectName('guideAction')
+
+        self.removeGuideAction = QtWidgets.QAction(QtGui.QIcon(':/trash.png'), '', parent=self.nameLineEdit)
+        self.removeGuideAction.setObjectName('removeGuideAction')
+        self.removeGuideAction.triggered.connect(self.on_removeGuideAction_triggered)
+
+        self.selectGuideAction = QtWidgets.QAction(QtGui.QIcon(':/aselect.png'), '', parent=self.nameLineEdit)
+        self.selectGuideAction.setObjectName('selectGuideAction')
+        self.selectGuideAction.triggered.connect(self.on_selectGuideAction_triggered)
+
+        self.nameLineEdit.addAction(self.guideAction, QtWidgets.QLineEdit.LeadingPosition)
+        self.nameLineEdit.addAction(self.removeGuideAction, QtWidgets.QLineEdit.TrailingPosition)
+        self.nameLineEdit.addAction(self.selectGuideAction, QtWidgets.QLineEdit.TrailingPosition)
+
+        # Initialize animation-range widgets
+        #
+        self.startTimeLayout = QtWidgets.QHBoxLayout()
+        self.startTimeLayout.setObjectName('startTimeLayout')
+        self.startTimeLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.startTimeWidget = QtWidgets.QWidget()
+        self.startTimeWidget.setObjectName('startTimeWidget')
+        self.startTimeWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.startTimeWidget.setFixedHeight(24)
+        self.startTimeWidget.setLayout(self.startTimeLayout)
+
+        self.startTimeLabel = QtWidgets.QLabel('Start:')
+        self.startTimeLabel.setObjectName('startTimeLabel')
+        self.startTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.startTimeLabel.setFixedWidth(32)
+        self.startTimeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.startTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.startTimeSpinBox.setObjectName('startTimeSpinBox')
+        self.startTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.startTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.startTimeSpinBox.setToolTip('The start frame to sample from.')
+        self.startTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.START_TIME)
+        self.startTimeSpinBox.setMinimum(-9999999)
+        self.startTimeSpinBox.setMaximum(9999999)
+        self.startTimeSpinBox.setValue(self.scene.startTime)
+        self.startTimeSpinBox.setEnabled(False)
+
+        self.startTimeCheckBox = QtWidgets.QCheckBox('')
+        self.startTimeCheckBox.setObjectName('startTimeCheckBox')
+        self.startTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.startTimeCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.startTimeCheckBox.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.startTimeCheckBox.toggled.connect(self.startTimeSpinBox.setEnabled)
+
+        self.startTimeLayout.addWidget(self.startTimeLabel)
+        self.startTimeLayout.addWidget(self.startTimeCheckBox)
+        self.startTimeLayout.addWidget(self.startTimeSpinBox)
+
+        self.endTimeLayout = QtWidgets.QHBoxLayout()
+        self.endTimeLayout.setObjectName('endTimeLayout')
+        self.endTimeLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.endTimeWidget = QtWidgets.QWidget()
+        self.endTimeWidget.setObjectName('endTimeWidget')
+        self.endTimeWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.endTimeWidget.setFixedHeight(24)
+        self.endTimeWidget.setLayout(self.endTimeLayout)
+        
+        self.endTimeLabel = QtWidgets.QLabel('End:')
+        self.endTimeLabel.setObjectName('endTimeLabel')
+        self.endTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.endTimeLabel.setFixedWidth(32)
+        self.endTimeLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        
+        self.endTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.endTimeSpinBox.setObjectName('endTimeSpinBox')
+        self.endTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.endTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.endTimeSpinBox.setToolTip('The end frame to sample from.')
+        self.endTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.END_TIME)
+        self.endTimeSpinBox.setMinimum(-9999999)
+        self.endTimeSpinBox.setMaximum(9999999)
+        self.endTimeSpinBox.setValue(self.scene.endTime)
+        self.endTimeSpinBox.setEnabled(False)
+
+        self.endTimeCheckBox = QtWidgets.QCheckBox('')
+        self.endTimeCheckBox.setObjectName('endTimeCheckBox')
+        self.endTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.endTimeCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.endTimeCheckBox.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.endTimeCheckBox.toggled.connect(self.endTimeSpinBox.setEnabled)
+
+        self.endTimeLayout.addWidget(self.endTimeLabel)
+        self.endTimeLayout.addWidget(self.endTimeCheckBox)
+        self.endTimeLayout.addWidget(self.endTimeSpinBox)
+
+        # Initialize keyframe option widgets
+        #
+        self.stepLayout = QtWidgets.QHBoxLayout()
+        self.stepLayout.setObjectName('stepLayout')
+        self.stepLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.stepWidget = QtWidgets.QWidget()
+        self.stepWidget.setObjectName('stepWidget')
+        self.stepWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
+        self.stepWidget.setFixedHeight(24)
+        self.stepWidget.setLayout(self.stepLayout)
+
+        self.stepLabel = QtWidgets.QLabel('Step:')
+        self.stepLabel.setObjectName('stepLabel')
+        self.stepLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.stepLabel.setFixedWidth(32)
+        self.stepLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+
+        self.stepSpinBox = qtimespinbox.QTimeSpinBox()
+        self.stepSpinBox.setObjectName('stepSpinBox')
+        self.stepSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.stepSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.stepSpinBox.setToolTip('The step interval to bake transforms to.')
+        self.stepSpinBox.setMinimum(1)
+        self.stepSpinBox.setMaximum(100)
+        self.stepSpinBox.setValue(1)
+        self.stepSpinBox.setEnabled(False)
+
+        self.stepCheckBox = QtWidgets.QCheckBox('')
+        self.stepCheckBox.setObjectName('stepCheckBox')
+        self.stepCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.stepCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.stepCheckBox.toggled.connect(self.stepSpinBox.setEnabled)
+
+        self.stepLayout.addWidget(self.stepLabel)
+        self.stepLayout.addWidget(self.stepCheckBox)
+        self.stepLayout.addWidget(self.stepSpinBox)
+
+        self.snapKeysCheckBox = QtWidgets.QCheckBox('Snap Keys to Nearest Frame')
+        self.snapKeysCheckBox.setObjectName('snapKeysCheckBox')
+        self.snapKeysCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
+        self.snapKeysCheckBox.setFixedHeight(24)
+        self.snapKeysCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.snapKeysCheckBox.setEnabled(False)
+
+        self.bakeKeysRadioButton = QtWidgets.QRadioButton('Bake Keys')
+        self.bakeKeysRadioButton.setObjectName('bakeKeysRadioButton')
+        self.bakeKeysRadioButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
+        self.bakeKeysRadioButton.setFixedHeight(24)
+        self.bakeKeysRadioButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.bakeKeysRadioButton.setChecked(True)
+        self.bakeKeysRadioButton.toggled.connect(self.stepWidget.setEnabled)
+
+        self.preserveKeysRadioButton = QtWidgets.QRadioButton('Preserve Keys')
+        self.preserveKeysRadioButton.setObjectName('preserveKeysRadioButton')
+        self.preserveKeysRadioButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed))
+        self.preserveKeysRadioButton.setFixedHeight(24)
+        self.preserveKeysRadioButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.preserveKeysRadioButton.toggled.connect(self.snapKeysCheckBox.setEnabled)
+
+        self.plotButtonGroup = QtWidgets.QButtonGroup(parent=self)
+        self.plotButtonGroup.addButton(self.bakeKeysRadioButton, id=0)
+        self.plotButtonGroup.addButton(self.preserveKeysRadioButton, id=1)
+
+        # Initialize align widgets
+        #
+        self.alignLayout = QtWidgets.QHBoxLayout()
+        self.alignLayout.setObjectName('alignLayout')
+        self.alignLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.alignWidget = QtWidgets.QWidget()
+        self.alignWidget.setObjectName('alignWidget')
+        self.alignWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.alignWidget.setFixedHeight(24)
+        self.alignWidget.setLayout(self.alignLayout)
+        
+        self.alignLabel = QtWidgets.QLabel('Align:')
+        self.alignLabel.setObjectName('alignLabel')
+        self.alignLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
+        self.alignLabel.setFixedWidth(32)
+        self.alignLabel.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+        
+        self.alignTranslateCheckBox = QtWidgets.QCheckBox('Translate')
+        self.alignTranslateCheckBox.setObjectName('alignTranslateCheckBox')
+        self.alignTranslateCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.alignTranslateCheckBox.setFixedHeight(24)
+        self.alignTranslateCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.alignTranslateCheckBox.setChecked(True)
+
+        self.alignRotateCheckBox = QtWidgets.QCheckBox('Rotate')
+        self.alignRotateCheckBox.setObjectName('alignRotateCheckBox')
+        self.alignRotateCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.alignRotateCheckBox.setFixedHeight(24)
+        self.alignRotateCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.alignRotateCheckBox.setChecked(True)
+
+        self.alignScaleCheckBox = QtWidgets.QCheckBox('Scale')
+        self.alignScaleCheckBox.setObjectName('alignScaleCheckBox')
+        self.alignScaleCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
+        self.alignScaleCheckBox.setFixedHeight(24)
+        self.alignScaleCheckBox.setFocusPolicy(QtCore.Qt.NoFocus)
+
+        self.alignButtonGroup = QtWidgets.QButtonGroup(parent=self)
+        self.alignButtonGroup.setObjectName('alignButtonGroup')
+        self.alignButtonGroup.setExclusive(False)
+        self.alignButtonGroup.addButton(self.alignTranslateCheckBox, id=0)
+        self.alignButtonGroup.addButton(self.alignRotateCheckBox, id=1)
+        self.alignButtonGroup.addButton(self.alignScaleCheckBox, id=2)
+
+        self.alignLayout.addWidget(self.alignLabel)
+        self.alignLayout.addWidget(self.alignTranslateCheckBox, alignment=QtCore.Qt.AlignCenter)
+        self.alignLayout.addWidget(self.alignRotateCheckBox, alignment=QtCore.Qt.AlignCenter)
+        self.alignLayout.addWidget(self.alignScaleCheckBox, alignment=QtCore.Qt.AlignCenter)
+
+        # Initialize settings group-box
+        #
+        self.settingsLayout = QtWidgets.QGridLayout()
+        self.settingsLayout.setObjectName('settingsLayout')
+
+        self.settingsGroupBox = QtWidgets.QGroupBox('Settings:')
+        self.settingsGroupBox.setObjectName('settingsGroupBox')
+        self.settingsGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.settingsGroupBox.setLayout(self.settingsLayout)
+
+        self.settingsLayout.addWidget(self.startTimeWidget, 0, 0)
+        self.settingsLayout.addWidget(self.endTimeWidget, 0, 2)
+        self.settingsLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 1, 0, 1, 3)
+        self.settingsLayout.addWidget(self.bakeKeysRadioButton, 2, 0)
+        self.settingsLayout.addWidget(self.preserveKeysRadioButton, 3, 0)
+        self.settingsLayout.addWidget(qdivider.QDivider(QtCore.Qt.Vertical), 2, 1, 2, 1)
+        self.settingsLayout.addWidget(self.stepWidget, 2, 2)
+        self.settingsLayout.addWidget(self.snapKeysCheckBox, 3, 2)
+        self.settingsLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 4, 0, 1, 3)
+        self.settingsLayout.addWidget(self.alignWidget, 5, 0, 1, 3)
+
+        centralLayout.addWidget(self.settingsGroupBox)
+
+        # Initialize plot button
+        #
+        self.plotGuidePushButton = QtWidgets.QPushButton('Plot')
+        self.plotGuidePushButton.setObjectName('plotGuidePushButton')
+        self.plotGuidePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.plotGuidePushButton.setFixedHeight(48)
+        self.plotGuidePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.plotGuidePushButton.clicked.connect(self.on_plotGuidePushButton_clicked)
+
+        centralLayout.addWidget(self.plotGuidePushButton)
     # endregion
 
     # region Properties
@@ -130,66 +422,6 @@ class QPlotterTab(qabstracttab.QAbstractTab):
     # endregion
 
     # region Methods
-    def postLoad(self, *args, **kwargs):
-        """
-        Called after the user interface has been loaded.
-
-        :rtype: None
-        """
-
-        # Call parent method
-        #
-        super(QPlotterTab, self).postLoad(*args, **kwargs)
-
-        # Initialize actions
-        #
-        self.guideAction = QtWidgets.QAction(QtGui.QIcon(':/animateSnapshot.png'), '', parent=self.nameLineEdit)
-        self.guideAction.setObjectName('guideAction')
-
-        self.removeGuideAction = QtWidgets.QAction(QtGui.QIcon(':/trash.png'), '', parent=self.nameLineEdit)
-        self.removeGuideAction.setObjectName('removeGuideAction')
-        self.removeGuideAction.triggered.connect(self.on_removeGuideAction_triggered)
-
-        self.selectGuideAction = QtWidgets.QAction(QtGui.QIcon(':/aselect.png'), '', parent=self.nameLineEdit)
-        self.selectGuideAction.setObjectName('selectGuideAction')
-        self.selectGuideAction.triggered.connect(self.on_selectGuideAction_triggered)
-
-        self.nameLineEdit.addAction(self.guideAction, QtWidgets.QLineEdit.LeadingPosition)
-        self.nameLineEdit.addAction(self.removeGuideAction, QtWidgets.QLineEdit.TrailingPosition)
-        self.nameLineEdit.addAction(self.selectGuideAction, QtWidgets.QLineEdit.TrailingPosition)
-
-        # Initialize guide item model
-        #
-        self.guideItemModel = QtGui.QStandardItemModel(0, 1, parent=self.guideTreeView)
-        self.guideItemModel.setObjectName('guideItemModel')
-        self.guideItemModel.setHorizontalHeaderLabels(['Name'])
-
-        self.guideTreeView.setModel(self.guideItemModel)
-        self.guideTreeView.selectionModel().selectionChanged.connect(self.on_guideTreeView_selectionChanged)
-
-        # Edit animation range spinners
-        #
-        self.startTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.CurrentTime)
-        self.startTimeSpinBox.setValue(self.scene.startTime)
-
-        self.endTimeSpinBox.setDefaultType(qtimespinbox.DefaultType.CurrentTime)
-        self.endTimeSpinBox.setValue(self.scene.endTime)
-
-        # Initialize match button group
-        #
-        self.matchButtonGroup = QtWidgets.QButtonGroup(parent=self.matchWidget)
-        self.matchButtonGroup.setObjectName('matchButtonGroup')
-        self.matchButtonGroup.setExclusive(False)
-        self.matchButtonGroup.addButton(self.matchTranslateCheckBox, id=0)
-        self.matchButtonGroup.addButton(self.matchRotateCheckBox, id=1)
-        self.matchButtonGroup.addButton(self.matchScaleCheckBox, id=2)
-
-        # Initialize keyframe button group
-        #
-        self.plotButtonGroup = QtWidgets.QButtonGroup(parent=self.settingsGroupBox)
-        self.plotButtonGroup.addButton(self.bakeKeysRadioButton, id=0)
-        self.plotButtonGroup.addButton(self.preserveKeysRadioButton, id=1)
-
     def loadSettings(self, settings):
         """
         Loads the user settings.
@@ -204,27 +436,27 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Load user preferences
         #
-        self.setPlotOption(int(settings.value('tabs/plotter/plotOption', defaultValue=0)))
-        self.setSnapKeys(bool(settings.value('tabs/plotter/snapKeys', defaultValue=0)))
-        self.setStep(int(settings.value('tabs/plotter/step', defaultValue=1)))
-        self.setStepEnabled(bool(settings.value('tabs/plotter/stepEnabled', defaultValue=1)))
+        self.setPlotOption(settings.value('tabs/plotter/plotOption', defaultValue=0, type=int))
+        self.setSnapKeys(bool(settings.value('tabs/plotter/snapKeys', defaultValue=0, type=int)))
+        self.setStep(settings.value('tabs/plotter/step', defaultValue=1, type=int))
+        self.setStepEnabled(bool(settings.value('tabs/plotter/stepEnabled', defaultValue=1, type=int)))
 
         # Load animation range
         #
-        startTimeEnabled = bool(settings.value('tabs/plotter/startTimeEnabled', defaultValue=0))
+        startTimeEnabled = bool(settings.value('tabs/plotter/startTimeEnabled', defaultValue=0, type=int))
         self.startTimeCheckBox.setChecked(startTimeEnabled)
 
         if startTimeEnabled:
 
-            startTime = int(settings.value('tabs/plotter/startTime', defaultValue=self.scene.startTime))
+            startTime = settings.value('tabs/plotter/startTime', defaultValue=self.scene.startTime, type=int)
             self.startTimeSpinBox.setValue(startTime)
 
-        endTimeEnabled = bool(settings.value('tabs/plotter/endTimeEnabled', defaultValue=0))
+        endTimeEnabled = bool(settings.value('tabs/plotter/endTimeEnabled', defaultValue=0, type=int))
         self.endTimeCheckBox.setChecked(endTimeEnabled)
 
         if endTimeEnabled:
 
-            endTime = int(settings.value('tabs/plotter/endTime', defaultValue=self.scene.endTime))
+            endTime = settings.value('tabs/plotter/endTime', defaultValue=self.scene.endTime, type=int)
             self.endTimeSpinBox.setValue(endTime)
 
         # Invalidate internal guides
@@ -262,16 +494,16 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         #
         self.scene.properties['animGuides'] = poseutils.dumpPose(self.guides)
 
-    def transformOptions(self):
+    def alignOptions(self):
         """
         Returns the transform options.
 
         :rtype: Tuple[bool, bool, bool]
         """
 
-        return [action.isChecked() for action in self.matchButtonGroup.buttons()]
+        return [button.isChecked() for button in self.alignButtonGroup.buttons()]
 
-    def setTransformOptions(self, options):
+    def setAlignOptions(self, options):
         """
         Updates the transform options.
 
@@ -279,9 +511,9 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         :rtype: None
         """
 
-        for (i, action) in enumerate(self.matchButtonGroup.buttons()):
+        for (i, button) in enumerate(self.alignButtonGroup.buttons()):
 
-            action.setChecked(options[i])
+            button.setChecked(options[i])
 
     def plotOption(self):
         """
@@ -476,7 +708,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
             return self.guides[selectedIndex.row()]
 
-    @undo(name='Plot Transforms')
+    @undo.Undo(name='Plot Transforms')
     def plot(self):
         """
         Plots the active selection to the selected guide.
@@ -510,7 +742,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         step = self.step() if self.stepEnabled() else 1
         preserveKeys = (option == 1)
         snapKeys = self.snapKeys()
-        translateEnabled, rotateEnabled, scaleEnabled = self.transformOptions()
+        translateEnabled, rotateEnabled, scaleEnabled = self.alignOptions()
 
         guide.bakeTransformationsTo(
             *selection,
@@ -523,7 +755,7 @@ class QPlotterTab(qabstracttab.QAbstractTab):
             skipScale=(not scaleEnabled)
         )
     
-    @undo(state=False)
+    @undo.Undo(state=False)
     def synchronize(self):
         """
         Synchronizes the tree view items with the internal guide objects.

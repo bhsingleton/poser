@@ -1,4 +1,7 @@
-from dcc.ui import quicwidget
+from Qt import QtCore, QtWidgets, QtGui
+from abc import abstractmethod
+from mpy import mpyscene
+from dcc.ui.abstract import qabcmeta
 
 import logging
 logging.basicConfig()
@@ -6,10 +9,31 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-class QAbstractTab(quicwidget.QUicWidget):
+class QAbstractTab(QtWidgets.QWidget, metaclass=qabcmeta.QABCMeta):
     """
-    Overload of `QUicWidget` used to outline the structure for alignment tabs.
+    Overload of `QWidget` that outlines poser tab behavior.
     """
+
+    # region Dunderscores
+    def __post_init__(self, *args, **kwargs):
+        """
+        Private method called after an instance has initialized.
+
+        :rtype: None
+        """
+
+        self.__setup_ui__(*args, **kwargs)
+
+    @abstractmethod
+    def __setup_ui__(self, *args, **kwargs):
+        """
+        Private method that initializes the user interface.
+
+        :rtype: None
+        """
+
+        pass
+    # endregion
 
     # region Properties
     @property

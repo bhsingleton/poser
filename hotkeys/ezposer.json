@@ -1,0 +1,245 @@
+{
+	"category": "Ez'Poser",
+	"commands": [
+		{
+			"name": "selectControlsCommand",
+			"annotation": "Selects all keyable controls from the scene.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.selectControls(visible=False)"
+			]
+		},
+		{
+			"name": "selectVisibleControlsCommand",
+			"annotation": "Selects all visible controls from the scene.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.selectControls(visible=True)"
+			]
+		},
+		{
+			"name": "selectAssociatedControlsCommand",
+			"annotation": "Selects the controls that are in the associated layers.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.selectAssociatedControls()"
+			]
+		},
+		{
+			"name": "toggleControllerVisibilityCommand",
+			"annotation": "Toggles the visibility for all animatable nodes.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.toggleControllerVisibility()"
+			]
+		},
+		{
+			"name": "togglePlaybackCommand",
+			"annotation": "Toggles the playback.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.togglePlayback()"
+			]
+		},
+		{
+			"name": "togglePlaybackSpeedCommand",
+			"annotation": "Toggles the playback speed between full, half and quarter.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.togglePlaybackSpeed()"
+			]
+		},
+		{
+			"name": "toggleMoveManipModeCommand",
+			"annotation": "Toggles the move manipulator between World and Object.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.toggleMoveManipMode()"
+			]
+		},
+		{
+			"name": "toggleRotateManipModeCommand",
+			"annotation": "Toggles the rotate manipulator between World, Object and Gimbal.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.toggleRotateManipMode()"
+			]
+		},
+		{
+			"name": "toggleViewportCommand",
+			"annotation": "Toggles the viewport without the hotbox.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.toggleViewport()"
+			]
+		},
+		{
+			"name": "frameVisibleCommand",
+			"annotation": "Frames the camera to all visible objects.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.frameVisible()"
+			]
+		},
+		{
+			"name": "keySelectedAttributesCommand",
+			"annotation": "Keys the selected channel-box attributes, if no attributes are selected then all attributes are keyed instead.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.keySelectedAttributes()"
+			]
+		},
+		{
+			"name": "keyTransformAttributesCommand",
+			"annotation": "Keys the translate, rotate and scale attributes on the selected nodes.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.keyTransforms()"
+			]
+		},
+		{
+			"name": "resetTransformsCommand",
+			"annotation": "Resets the transforms on the selected objects.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.resetTransforms()"
+			]
+		},
+		{
+			"name": "deleteSelectedKeysCommand",
+			"annotation": "Deletes any selected keys inside the time slider.",
+			"language": "mel",
+			"code": ["timeSliderClearKey()"]
+		},
+		{
+			"name": "deleteSelectedAnimationCommand",
+			"annotation": "Deletes all animation from the selected objects.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.deleteSelectedAnimation()"
+			]
+		},
+		{
+			"name": "deleteSingleTranslateKeyCommand",
+			"annotation": "Deletes any translate keys at the current time.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.deleteSingleTranslateKey()"
+			]
+		},
+		{
+			"name": "deleteSingleRotateKeyCommand",
+			"annotation": "Deletes any rotate keys at the current time.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.deleteSingleRotateKey()"
+			]
+		},
+		{
+			"name": "deleteSingleScaleKeyCommand",
+			"annotation": "Deletes any scale keys at the current time.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.deleteSingleScaleKey()"
+			]
+		},
+		{
+			"name": "deleteOverlappingKeysCommand",
+			"annotation": "Deletes any overlapping keys from the active selection.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.deleteOverlappingKeys()"
+			]
+		},
+		{
+			"name": "goToNextFrameCommand",
+			"annotation": "Goes to the next frame with undo disabled.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.goToNextFrame()"
+			]
+		},
+		{
+			"name": "goToPreviousFrameCommand",
+			"annotation": "Goes to the previous frame with undo disabled.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.goToPreviousFrame()"
+			]
+		},
+		{
+			"name": "goToNextKeyframeCommand",
+			"annotation": "Goes to the next keyframe with undo disabled.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.goToNextKeyframe()"
+			]
+		},
+		{
+			"name": "goToPreviousKeyframeCommand",
+			"annotation": "Goes to the previous keyframe with undo disabled.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.goToPreviousKeyframe()"
+			]
+		},
+		{
+			"name": "goToStartFrameCommand",
+			"annotation": "Interrupts playback and goes to the start frame.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.goToStartFrame()"
+			]
+		},
+		{
+			"name": "goToEndFrameCommand",
+			"annotation": "Interrupts playback and goes to the end frame.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.goToEndFrame()"
+			]
+		},
+		{
+			"name": "toggleWireframeCommand",
+			"annotation": "Toggles between wireframe and shaded.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.toggleWireframe()"
+			]
+		},
+		{
+			"name": "toggleWireframeOnShadedCommand",
+			"annotation": "Toggles between wireframe on shaded.",
+			"language": "python",
+			"code": [
+				"from ezposer.libs import animhelpers",
+				"animhelpers.toggleWireframeOnShaded()"
+			]
+		}
+	]
+}
