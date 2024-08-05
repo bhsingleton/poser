@@ -618,7 +618,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         #
         if sort:
 
-            return sorted(selection, key=self.getSortPriority)
+            return sorted(selection, key=cls.getSortPriority)
 
         else:
 
