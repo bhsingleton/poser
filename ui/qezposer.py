@@ -128,37 +128,6 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         self.setWindowTitle("|| Ez'Poser")
         self.setMinimumSize(QtCore.QSize(300, 500))
 
-        # Initialize central widget
-        #
-        centralLayout = QtWidgets.QVBoxLayout()
-        centralLayout.setObjectName('centralLayout')
-
-        centralWidget = QtWidgets.QWidget(parent=self)
-        centralWidget.setObjectName('centralWidget')
-        centralWidget.setLayout(centralLayout)
-
-        self.setCentralWidget(centralWidget)
-
-        # Initialize tab-control
-        #
-        self.tabControl = QtWidgets.QTabWidget(parent=self)
-        self.tabControl.setObjectName('tabControl')
-        self.tabControl.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
-
-        self.libraryTab = qlibrarytab.QLibraryTab(parent=self.tabControl)
-        self.plotterTab = qplottertab.QPlotterTab(parent=self.tabControl)
-        self.alignTab = qaligntab.QAlignTab(parent=self.tabControl)
-        self.loopTab = qlooptab.QLoopTab(parent=self.tabControl)
-
-        self.tabControl.addTab(self.libraryTab, 'Library')
-        self.tabControl.addTab(self.plotterTab, 'Plotter')
-        self.tabControl.addTab(self.alignTab, 'Align')
-        self.tabControl.addTab(self.loopTab, 'Loop')
-
-        self.cwdChanged.connect(self.libraryTab.fileItemModel.setCwd)
-
-        centralLayout.addWidget(self.tabControl)
-
         # Initialize main menu-bar
         #
         mainMenuBar = QtWidgets.QMenuBar()
@@ -256,6 +225,37 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         self.usingEzPoserAction.triggered.connect(self.on_usingEzPoserAction_triggered)
 
         self.helpMenu.addAction(self.usingEzPoserAction)
+
+        # Initialize central widget
+        #
+        centralLayout = QtWidgets.QVBoxLayout()
+        centralLayout.setObjectName('centralLayout')
+
+        centralWidget = QtWidgets.QWidget(parent=self)
+        centralWidget.setObjectName('centralWidget')
+        centralWidget.setLayout(centralLayout)
+
+        self.setCentralWidget(centralWidget)
+
+        # Initialize tab-control
+        #
+        self.tabControl = QtWidgets.QTabWidget(parent=self)
+        self.tabControl.setObjectName('tabControl')
+        self.tabControl.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+
+        self.libraryTab = qlibrarytab.QLibraryTab(parent=self.tabControl)
+        self.plotterTab = qplottertab.QPlotterTab(parent=self.tabControl)
+        self.alignTab = qaligntab.QAlignTab(parent=self.tabControl)
+        self.loopTab = qlooptab.QLoopTab(parent=self.tabControl)
+
+        self.tabControl.addTab(self.libraryTab, 'Library')
+        self.tabControl.addTab(self.plotterTab, 'Plotter')
+        self.tabControl.addTab(self.alignTab, 'Align')
+        self.tabControl.addTab(self.loopTab, 'Loop')
+
+        self.cwdChanged.connect(self.libraryTab.fileItemModel.setCwd)
+
+        centralLayout.addWidget(self.tabControl)
     # endregion
 
     # region Properties
