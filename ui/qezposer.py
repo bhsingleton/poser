@@ -151,7 +151,10 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         self.settingsMenu = mainMenuBar.addMenu('&Settings')
         self.settingsMenu.setObjectName('settingsMenu')
 
-        self.rigConfigurationAction = QtWidgets.QAction('Rig:', parent=self.settingsMenu)
+        currentConfig = self.currentConfiguration()
+        configName = currentConfig.name if (currentConfig is not None) else ''
+
+        self.rigConfigurationAction = QtWidgets.QAction(f'Rig: {configName}', parent=self.settingsMenu)
         self.rigConfigurationAction.setObjectName('rigConfigurationAction')
         self.rigConfigurationAction.setEnabled(False)
 
