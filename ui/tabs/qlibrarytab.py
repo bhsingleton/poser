@@ -611,6 +611,8 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         # Load user preferences
         #
         self.setCurrentPath(settings.value('tabs/library/currentPath', defaultValue=self.currentPath(), type=str))
+        self._poseClipboard = poseutils.loadPose(settings.value('tabs/library/poseClipboard', defaultValue='null', type=str))
+        self._matrixClipboard = poseutils.loadPose(settings.value('tabs/library/matrixClipboard', defaultValue='null', type=str))
 
     def saveSettings(self, settings):
         """
@@ -627,6 +629,8 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         # Save user preferences
         #
         settings.setValue('tabs/library/currentPath', self.currentPath())
+        settings.setValue('tabs/library/poseClipboard', poseutils.dumpPose(self._poseClipboard))
+        settings.setValue('tabs/library/matrixClipboard', poseutils.dumpPose(self._matrixClipboard))
 
     def currentPath(self, absolute=False):
         """
