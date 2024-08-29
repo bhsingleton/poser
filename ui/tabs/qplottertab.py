@@ -3,6 +3,7 @@ from maya.api import OpenMaya as om
 from dcc.python import stringutils
 from dcc.ui import qtimespinbox, qdivider
 from dcc.maya.decorators import undo
+from dcc.collections import notifylist
 from . import qabstracttab
 from ...libs import poseutils
 
@@ -33,7 +34,9 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Declare private variables
         #
-        self._guides = []
+        self._guides = notifylist.NotifyList()
+        self._guides.addCallback('itemAdded', self.guideAdded)
+        self._guides.addCallback('itemRemoved', self.guideRemoved)
 
     def __setup_ui__(self, *args, **kwargs):
         """
@@ -389,14 +392,12 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         self._guides.clear()
         self._guides.extend(guides)
-
-        self.synchronize()
     # endregion
 
     # region Callback
-    def sceneChanged(self, *args, clientData=None):
+    def sceneChanged(self, *args, **kwargs):
         """
-        Scene changed callback that refreshes the internal guides.
+        Scene changed callback.
 
         :type clientData: Any
         :rtype: None
@@ -404,7 +405,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         # Load anim-guides from file properties
         #
-        self.guides = poseutils.loadPose(self.scene.properties.get('animGuides', default='[]'))
+        data = self.scene.properties.get('animGuides', default='[]')
+
+        if not stringutils.isNullOrEmpty(data):
+
+            self.guides = poseutils.loadPose(data)
 
         # Invalidate animation-range
         #
@@ -419,6 +424,27 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         if not endTimeEnabled:
 
             self.endTimeSpinBox.setValue(self.scene.endTime)
+
+    def guideAdded(self, index, guide):
+        """
+        Guide added callback.
+
+        :type index: int
+        :type guide: pose.Pose
+        :rtype: None
+        """
+
+        self.synchronize()
+
+    def guideRemoved(self, guide):
+        """
+        Guide removed callback.
+
+        :type guide: pose.Pose
+        :rtype: None
+        """
+        
+        self.synchronize()
     # endregion
 
     # region Methods
@@ -792,6 +818,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
                 nodeItem.setEditable(False)
 
                 guideItem.setChild(j, nodeItem)
+
+        # Push guides to scene properties
+        #
+        self.scene.properties['animGuides'] = poseutils.dumpPose(self.guides)
+        self.scene.markDirty()
     # endregion
 
     # region Slots
@@ -813,12 +844,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
         sender.clearFocus()
 
-    @QtCore.Slot(bool)
-    def on_selectGuideAction_triggered(self, checked=False):
+    @QtCore.Slot()
+    def on_selectGuideAction_triggered(self):
         """
         Slot method for the selectGuidePushButton's `triggered` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -832,12 +862,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
             log.warning('No guide selected!')
 
-    @QtCore.Slot(bool)
-    def on_removeGuideAction_triggered(self, checked=False):
+    @QtCore.Slot()
+    def on_removeGuideAction_triggered(self):
         """
         Slot method for the removeGuideAction's `triggered` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -864,8 +893,6 @@ class QPlotterTab(qabstracttab.QAbstractTab):
             index = self.guides.index(guide)
             del self.guides[index]
 
-            self.synchronize()
-
         else:
 
             log.info('Operation aborted...')
@@ -890,12 +917,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
             self.nameLineEdit.setText('')
 
-    @QtCore.Slot(bool)
-    def on_createGuidePushButton_clicked(self, checked=False):
+    @QtCore.Slot()
+    def on_createGuidePushButton_clicked(self):
         """
         Slot method for the createGuidePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -910,7 +936,6 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         # Create new pose and synchronize
         #
         selection = sorted(self.scene.selection(apiType=om.MFn.kTransform), key=self.getSortPriority)
-
         pose = poseutils.createPose(
             *selection,
             name=name,
@@ -920,14 +945,12 @@ class QPlotterTab(qabstracttab.QAbstractTab):
         )
 
         self.guides.append(pose)
-        self.synchronize()
 
-    @QtCore.Slot(bool)
-    def on_removeGuidePushButton_clicked(self, checked=False):
+    @QtCore.Slot()
+    def on_removeGuidePushButton_clicked(self):
         """
         Slot method for the removeGuidePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -938,18 +961,15 @@ class QPlotterTab(qabstracttab.QAbstractTab):
             index = self.guides.index(guide)
             del self.guides[index]
 
-            self.synchronize()
-
         else:
 
             log.warning('No guide selected to remove!')
 
-    @QtCore.Slot(bool)
-    def on_importGuidePushButton_clicked(self, checked=False):
+    @QtCore.Slot()
+    def on_importGuidePushButton_clicked(self):
         """
         Slot method for the importGuidePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -969,18 +989,15 @@ class QPlotterTab(qabstracttab.QAbstractTab):
             guide = poseutils.importPose(importPath)
             self.guides.append(guide)
 
-            self.synchronize()
-
         else:
 
             log.info('Operation aborted...')
 
-    @QtCore.Slot(bool)
-    def on_exportGuidePushButton_clicked(self, checked=False):
+    @QtCore.Slot()
+    def on_exportGuidePushButton_clicked(self):
         """
         Slot method for the exportGuidePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -1012,12 +1029,11 @@ class QPlotterTab(qabstracttab.QAbstractTab):
 
             log.info('Operation aborted...')
 
-    @QtCore.Slot(bool)
-    def on_plotGuidePushButton_clicked(self, checked=False):
+    @QtCore.Slot()
+    def on_plotGuidePushButton_clicked(self):
         """
         Slot method for the plotGuidePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
