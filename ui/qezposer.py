@@ -506,6 +506,17 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         return cls.__namespace__
 
     @classmethod
+    def setCurrentNamespace(cls, namespace):
+        """
+        Updates the current namespace.
+
+        :type namespace: str
+        :rtype: None
+        """
+
+        cls.__namespace__ = namespace
+
+    @classmethod
     def currentConfiguration(cls):
         """
         Returns the current rig configuration.
@@ -855,7 +866,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         :rtype: None
         """
 
-        self.__class__.__namespace__ = self.sender().whatsThis()
+        self.setCurrentNamespace(self.sender().whatsThis())
 
     @QtCore.Slot(bool)
     def on_changeRigConfigurationAction_triggered(self, checked=False):
