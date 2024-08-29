@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
 
-QUAD_VIEW = ('Top View', 'Persp View', 'Front View', 'Side View')
+CUSTOM_QUAD_VIEW = 'Stacked Four View'
+DEFAULT_QUAD_VIEWS = ('Top View', 'Persp View', 'Front View', 'Side View')
 
 
 def selectControls(visible=False):
@@ -227,7 +228,7 @@ def toggleControllerVisibility():
     panel = mc.getPanel(withFocus=True)
     panelLabel = mc.panel(panel, query=True, label=True)
 
-    if panelLabel not in QUAD_VIEW:
+    if panelLabel not in DEFAULT_QUAD_VIEWS:
 
         return
 
@@ -287,22 +288,17 @@ def goToSingleView(view):
     :rtype: None
     """
 
-    # Get associated panel
+    # Get panel associated with view index
     #
-    panels = [panel for panel in mc.getPanel(allPanels=True) if mc.panel(panel, query=True, label=True) in QUAD_VIEW]
-    labels = [mc.panel(panel, query=True, label=True) for panel in panels]
+    panelNames = [panel for panel in mc.getPanel(allPanels=True) if mc.panel(panel, query=True, label=True) in DEFAULT_QUAD_VIEWS]
+    panelLabels = [mc.panel(panelName, query=True, label=True) for panelName in panelNames]
 
-    index = labels.index(QUAD_VIEW[view])
-    panel = panels[index]
+    index = panelLabels.index(DEFAULT_QUAD_VIEWS[view])
+    panelName = panelNames[index]
 
-    # Edit main pane
+    # Update panel layout
     #
-    mainPane = mel.eval('$temp = $gMainPane')
-
-    mc.paneLayout(mainPane, edit=True, manage=False)
-    mc.paneLayout(mainPane, edit=True, configuration='single')
-    mc.paneLayout(mainPane, edit=True, setPane=(panel, 1))
-    mc.paneLayout(mainPane, edit=True, manage=True)
+    mel.eval(f'doSwitchPanes(1, {{"single", "{panelName}"}});')
 
 
 def goToQuadView():
@@ -312,31 +308,59 @@ def goToQuadView():
     :rtype: None
     """
 
-    # Get panels for quad-view
+    # Check if custom view exists
     #
-    panels = [panel for panel in mc.getPanel(allPanels=True) if mc.panel(panel, query=True, label=True) in QUAD_VIEW]
-    labels = [mc.panel(panel, query=True, label=True) for panel in panels]
+    panelName = mc.getPanel(configWithLabel=CUSTOM_QUAD_VIEW)
+    configExists = not stringutils.isNullOrEmpty(panelName)
 
-    indices = [QUAD_VIEW.index(label) + 1 for label in labels if label in QUAD_VIEW]
+    if configExists:
 
-    # Edit main pane layout
-    #
-    mainPane = mel.eval('$temp = $gMainPane')
+        # Update panel layout
+        #
+        mel.eval(f'setNamedPanelLayout("{CUSTOM_QUAD_VIEW}");')
 
-    mc.paneLayout(mainPane, edit=True, manage=False)
-    mc.paneLayout(mainPane, edit=True, configuration='left4')
+    else:
 
-    for (i, panel) in enumerate(panels):
+        # Create panel configuration
+        #
+        configName = mc.panelConfiguration(
+            label=CUSTOM_QUAD_VIEW,
+            sceneConfig=False,
+            configString='paneLayout -edit -configuration "left4" -paneSize 2 75 100 $gMainPane;',
+            addPanel=[
+                (
+                    False,  # type isFixed: bool
+                    'Top View',  # type panelLabel: str
+                    'modelPanel',  # type panelType: str
+                    '{global int $gUseMenusInPanels; modelPanel -mbv $gUseMenusInPanels -unParent -l "Top View" -cam "top";}',  # type createCommand: str
+                    'modelPanel -edit -l "Top View"  -cam "top" $panelName;'  # type editCommand: str
+                ),
+                (
+                    False,
+                    'Persp View',
+                    'modelPanel',
+                    '{global int $gUseMenusInPanels; modelPanel -mbv $gUseMenusInPanels -unParent -l "Persp View" -cam "persp";}',
+                    'modelPanel -edit -l "Persp View"  -cam "persp" $panelName;'
+                ),
+                (
+                    False,
+                    'Front View',
+                    'modelPanel',
+                    '{global int $gUseMenusInPanels; modelPanel -mbv $gUseMenusInPanels -unParent -l "Front View" -cam "front";}',
+                    'modelPanel -edit -l "Front View"  -cam "front" $panelName;'
+                ),
+                (
+                    False,
+                    'Side View',
+                    'modelPanel',
+                    '{global int $gUseMenusInPanels; modelPanel -mbv $gUseMenusInPanels -unParent -l "Side View" -cam "side";}',
+                    'modelPanel -edit -l "Side View"  -cam "side" $panelName;'
+                )
+            ]
+        )
 
-        mc.paneLayout(mainPane, edit=True, setPane=(panel, indices[i]))
-
-    # Edit perspective pane size
-    #
-    mc.paneLayout(mainPane, edit=True, paneSize=(2, 75, 100))
-
-    # Display pane changes
-    #
-    mc.paneLayout(mainPane, edit=True, manage=True)
+        log.info(f'Create {configName} panel configuration!')
+        goToQuadView()
 
 
 @undo.Undo(state=False)
@@ -366,9 +390,9 @@ def toggleViewport():
         #
         label = mc.panel(focusedPanel, query=True, label=True)
 
-        if label in QUAD_VIEW:
+        if label in DEFAULT_QUAD_VIEWS:
 
-            index = QUAD_VIEW.index(label)
+            index = DEFAULT_QUAD_VIEWS.index(label)
             goToSingleView(index)
 
     else:  # Go to Quad-View
