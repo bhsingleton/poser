@@ -458,96 +458,6 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         centralLayout.addWidget(self.quickPoseGroupBox)
 
-        # Initialize mirror range widget
-        #
-        self.mirrorRangeLayout = QtWidgets.QGridLayout()
-        self.mirrorRangeLayout.setObjectName('mirrorRangeLayout')
-        self.mirrorRangeLayout.setContentsMargins(0, 0, 0, 0)
-
-        self.mirrorRangeWidget = QtWidgets.QWidget()
-        self.mirrorRangeWidget.setObjectName('mirrorRangeWidget')
-        self.mirrorRangeWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
-        self.mirrorRangeWidget.setLayout(self.mirrorRangeLayout)
-
-        self.mirrorStartTimeLabel = QtWidgets.QLabel('-Start Time-')
-        self.mirrorStartTimeLabel.setObjectName('mirrorStartTimeLabel')
-        self.mirrorStartTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorStartTimeLabel.setMinimumHeight(24)
-        self.mirrorStartTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
-
-        self.mirrorStartTimeSpinBox = qtimespinbox.QTimeSpinBox()
-        self.mirrorStartTimeSpinBox.setObjectName('mirrorStartTimeSpinBox')
-        self.mirrorStartTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorStartTimeSpinBox.setMinimumHeight(24)
-        self.mirrorStartTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.mirrorStartTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.START_TIME)
-        self.mirrorStartTimeSpinBox.setMinimum(-9999999)
-        self.mirrorStartTimeSpinBox.setMaximum(9999999)
-        self.mirrorStartTimeSpinBox.setValue(self.scene.startTime)
-        self.mirrorStartTimeSpinBox.setEnabled(False)
-        
-        self.mirrorStartTimeCheckBox = QtWidgets.QCheckBox('')
-        self.mirrorStartTimeCheckBox.setObjectName('mirrorStartTimeLabel')
-        self.mirrorStartTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorStartTimeCheckBox.setMinimumHeight(24)
-        self.mirrorStartTimeCheckBox.toggled.connect(self.mirrorStartTimeSpinBox.setEnabled)
-
-        self.mirrorEndTimeLabel = QtWidgets.QLabel('-End Time-')
-        self.mirrorEndTimeLabel.setObjectName('mirrorEndTimeLabel')
-        self.mirrorEndTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorEndTimeLabel.setMinimumHeight(24)
-        self.mirrorEndTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
-
-        self.mirrorEndTimeSpinBox = qtimespinbox.QTimeSpinBox()
-        self.mirrorEndTimeSpinBox.setObjectName('mirrorEndTimeSpinBox')
-        self.mirrorEndTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorEndTimeSpinBox.setMinimumHeight(24)
-        self.mirrorEndTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.mirrorEndTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.END_TIME)
-        self.mirrorEndTimeSpinBox.setMinimum(-9999999)
-        self.mirrorEndTimeSpinBox.setMaximum(9999999)
-        self.mirrorEndTimeSpinBox.setValue(self.scene.endTime)
-        self.mirrorEndTimeSpinBox.setEnabled(False)
-
-        self.mirrorEndTimeCheckBox = QtWidgets.QCheckBox('')
-        self.mirrorEndTimeCheckBox.setObjectName('mirrorEndTimeLabel')
-        self.mirrorEndTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorEndTimeCheckBox.setMinimumHeight(24)
-        self.mirrorEndTimeCheckBox.toggled.connect(self.mirrorEndTimeSpinBox.setEnabled)
-
-        self.mirrorInsertTimeLabel = QtWidgets.QLabel('~Insert-At~')
-        self.mirrorInsertTimeLabel.setObjectName('mirrorInsertTimeLabel')
-        self.mirrorInsertTimeLabel.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorInsertTimeLabel.setMinimumHeight(24)
-        self.mirrorInsertTimeLabel.setAlignment(QtCore.Qt.AlignCenter)
-
-        self.mirrorInsertTimeSpinBox = qtimespinbox.QTimeSpinBox()
-        self.mirrorInsertTimeSpinBox.setObjectName('mirrorInsertTimeSpinBox')
-        self.mirrorInsertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorInsertTimeSpinBox.setMinimumHeight(24)
-        self.mirrorInsertTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
-        self.mirrorInsertTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.CURRENT_TIME)
-        self.mirrorInsertTimeSpinBox.setMinimum(-9999999)
-        self.mirrorInsertTimeSpinBox.setMaximum(9999999)
-        self.mirrorInsertTimeSpinBox.setValue(self.scene.time)
-        self.mirrorInsertTimeSpinBox.setEnabled(False)
-
-        self.mirrorInsertTimeCheckBox = QtWidgets.QCheckBox('')
-        self.mirrorInsertTimeCheckBox.setObjectName('mirrorInsertTimeLabel')
-        self.mirrorInsertTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
-        self.mirrorInsertTimeCheckBox.setMinimumHeight(24)
-        self.mirrorInsertTimeCheckBox.toggled.connect(self.mirrorInsertTimeSpinBox.setEnabled)
-
-        self.mirrorRangeLayout.addWidget(self.mirrorStartTimeLabel, 0, 1)
-        self.mirrorRangeLayout.addWidget(self.mirrorStartTimeCheckBox, 1, 0)
-        self.mirrorRangeLayout.addWidget(self.mirrorStartTimeSpinBox, 1, 1)
-        self.mirrorRangeLayout.addWidget(self.mirrorEndTimeLabel, 0, 3)
-        self.mirrorRangeLayout.addWidget(self.mirrorEndTimeCheckBox, 1, 2)
-        self.mirrorRangeLayout.addWidget(self.mirrorEndTimeSpinBox, 1, 3)
-        self.mirrorRangeLayout.addWidget(self.mirrorInsertTimeLabel, 0, 5)
-        self.mirrorRangeLayout.addWidget(self.mirrorInsertTimeCheckBox, 1, 4)
-        self.mirrorRangeLayout.addWidget(self.mirrorInsertTimeSpinBox, 1, 5)
-
         # Initialize quick-mirror group-box
         #
         self.quickMirrorLayout = QtWidgets.QGridLayout()
@@ -590,9 +500,112 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.quickMirrorLayout.addWidget(self.pullPosePushButton, 0, 1)
         self.quickMirrorLayout.addWidget(self.mirrorAnimationPushButton, 1, 0)
         self.quickMirrorLayout.addWidget(self.pullAnimationPushButton, 1, 1)
-        self.quickMirrorLayout.addWidget(self.mirrorRangeWidget, 2, 0, 1, 2)
 
-        centralLayout.addWidget(self.quickMirrorGroupBox)
+        # Initialize mirror start-time group-box
+        #
+        self.mirrorStartTimeLayout = QtWidgets.QGridLayout()
+        self.mirrorStartTimeLayout.setObjectName('mirrorStartTimeLayout')
+        
+        self.mirrorStartTimeGroupBox = QtWidgets.QGroupBox('Start-Frame')
+        self.mirrorStartTimeGroupBox.setObjectName('mirrorStartTimeGroupBox')
+        self.mirrorStartTimeGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorStartTimeGroupBox.setAlignment(QtCore.Qt.AlignCenter)
+        self.mirrorStartTimeGroupBox.setLayout(self.mirrorStartTimeLayout)
+
+        self.mirrorStartTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.mirrorStartTimeSpinBox.setObjectName('mirrorStartTimeSpinBox')
+        self.mirrorStartTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorStartTimeSpinBox.setFixedHeight(24)
+        self.mirrorStartTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.mirrorStartTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.START_TIME)
+        self.mirrorStartTimeSpinBox.setMinimum(-9999999)
+        self.mirrorStartTimeSpinBox.setMaximum(9999999)
+        self.mirrorStartTimeSpinBox.setValue(self.scene.startTime)
+        self.mirrorStartTimeSpinBox.setEnabled(False)
+
+        self.mirrorStartTimeCheckBox = QtWidgets.QCheckBox('')
+        self.mirrorStartTimeCheckBox.setObjectName('mirrorStartTimeLabel')
+        self.mirrorStartTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorStartTimeCheckBox.setFixedHeight(24)
+        self.mirrorStartTimeCheckBox.toggled.connect(self.mirrorStartTimeSpinBox.setEnabled)
+
+        self.mirrorStartTimeLayout.addWidget(self.mirrorStartTimeCheckBox, 0, 0)
+        self.mirrorStartTimeLayout.addWidget(self.mirrorStartTimeSpinBox, 0, 1)
+        
+        # Initialize mirror end-time group-box
+        #
+        self.mirrorEndTimeLayout = QtWidgets.QGridLayout()
+        self.mirrorEndTimeLayout.setObjectName('mirrorEndTimeLayout')
+
+        self.mirrorEndTimeGroupBox = QtWidgets.QGroupBox('End-Frame')
+        self.mirrorEndTimeGroupBox.setObjectName('mirrorEndTimeGroupBox')
+        self.mirrorEndTimeGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorEndTimeGroupBox.setAlignment(QtCore.Qt.AlignCenter)
+        self.mirrorEndTimeGroupBox.setLayout(self.mirrorEndTimeLayout)
+
+        self.mirrorEndTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.mirrorEndTimeSpinBox.setObjectName('mirrorEndTimeSpinBox')
+        self.mirrorEndTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorEndTimeSpinBox.setFixedHeight(24)
+        self.mirrorEndTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.mirrorEndTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.END_TIME)
+        self.mirrorEndTimeSpinBox.setMinimum(-9999999)
+        self.mirrorEndTimeSpinBox.setMaximum(9999999)
+        self.mirrorEndTimeSpinBox.setValue(self.scene.endTime)
+        self.mirrorEndTimeSpinBox.setEnabled(False)
+
+        self.mirrorEndTimeCheckBox = QtWidgets.QCheckBox('')
+        self.mirrorEndTimeCheckBox.setObjectName('mirrorEndTimeLabel')
+        self.mirrorEndTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorEndTimeCheckBox.setFixedHeight(24)
+        self.mirrorEndTimeCheckBox.toggled.connect(self.mirrorEndTimeSpinBox.setEnabled)
+        
+        self.mirrorEndTimeLayout.addWidget(self.mirrorEndTimeCheckBox, 0, 0)
+        self.mirrorEndTimeLayout.addWidget(self.mirrorEndTimeSpinBox, 0, 1)
+        
+        # Initialize mirror insert-at group-box
+        #
+        self.mirrorInsertTimeLayout = QtWidgets.QGridLayout()
+        self.mirrorInsertTimeLayout.setObjectName('mirrorInsertTimeLayout')
+
+        self.mirrorInsertTimeGroupBox = QtWidgets.QGroupBox('Insert-At')
+        self.mirrorInsertTimeGroupBox.setObjectName('mirrorInsertTimeGroupBox')
+        self.mirrorInsertTimeGroupBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorInsertTimeGroupBox.setAlignment(QtCore.Qt.AlignCenter)
+        self.mirrorInsertTimeGroupBox.setLayout(self.mirrorInsertTimeLayout)
+
+        self.mirrorInsertTimeSpinBox = qtimespinbox.QTimeSpinBox()
+        self.mirrorInsertTimeSpinBox.setObjectName('mirrorInsertTimeSpinBox')
+        self.mirrorInsertTimeSpinBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorInsertTimeSpinBox.setFixedHeight(24)
+        self.mirrorInsertTimeSpinBox.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.mirrorInsertTimeSpinBox.setDefaultType(qtimespinbox.QTimeSpinBox.DefaultType.CURRENT_TIME)
+        self.mirrorInsertTimeSpinBox.setMinimum(-9999999)
+        self.mirrorInsertTimeSpinBox.setMaximum(9999999)
+        self.mirrorInsertTimeSpinBox.setValue(self.scene.time)
+        self.mirrorInsertTimeSpinBox.setEnabled(False)
+
+        self.mirrorInsertTimeCheckBox = QtWidgets.QCheckBox('')
+        self.mirrorInsertTimeCheckBox.setObjectName('mirrorInsertTimeLabel')
+        self.mirrorInsertTimeCheckBox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed))
+        self.mirrorInsertTimeCheckBox.setFixedHeight(24)
+        self.mirrorInsertTimeCheckBox.toggled.connect(self.mirrorInsertTimeSpinBox.setEnabled)
+
+        self.mirrorInsertTimeLayout.addWidget(self.mirrorInsertTimeCheckBox, 0, 0)
+        self.mirrorInsertTimeLayout.addWidget(self.mirrorInsertTimeSpinBox, 0, 1)
+
+        # Initialize mirror layout
+        #
+        self.mirrorLayout = QtWidgets.QGridLayout()
+        self.mirrorLayout.setObjectName('mirrorLayout')
+        self.mirrorLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.mirrorLayout.addWidget(self.quickMirrorGroupBox, 0, 0, 1, 3)
+        self.mirrorLayout.addWidget(self.mirrorStartTimeGroupBox, 1, 0)
+        self.mirrorLayout.addWidget(self.mirrorEndTimeGroupBox, 1, 1)
+        self.mirrorLayout.addWidget(self.mirrorInsertTimeGroupBox, 1, 2)
+
+        centralLayout.addLayout(self.mirrorLayout)
     # endregion
 
     # region Methods
