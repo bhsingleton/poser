@@ -233,6 +233,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         #
         centralLayout = QtWidgets.QVBoxLayout()
         centralLayout.setObjectName('centralLayout')
+        centralLayout.setContentsMargins(1, 1, 1, 1)
 
         centralWidget = QtWidgets.QWidget(parent=self)
         centralWidget.setObjectName('centralWidget')
@@ -866,7 +867,8 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         :rtype: None
         """
 
-        self.setCurrentNamespace(self.sender().whatsThis())
+        namespace = self.sender().whatsThis()
+        self.setCurrentNamespace(namespace)
 
     @QtCore.Slot(bool)
     def on_changeRigConfigurationAction_triggered(self, checked=False):
