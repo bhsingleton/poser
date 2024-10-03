@@ -601,7 +601,15 @@ def deleteSelectedAnimation():
     for node in selection:
 
         animCurves = mc.listConnections(node, type='animCurve')
-        mc.delete(animCurves)
+        hasAnimCurves = not stringutils.isNullOrEmpty(animCurves)
+
+        if hasAnimCurves:
+
+            mc.delete(animCurves)
+
+        else:
+
+            continue
 
 
 @undo.Undo(name="Delete Single Translate Key")
