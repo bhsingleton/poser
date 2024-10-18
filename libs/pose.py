@@ -49,22 +49,22 @@ class Pose(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
-        self._name = kwargs.get('name', self.scene.name)
-        self._filePath = kwargs.get('filePath', self.scene.filePath)
-        self._animationRange = kwargs.get('animationRange', self.scene.animationRange)
+        self._name = kwargs.pop('name', self.scene.name)
+        self._filePath = kwargs.pop('filePath', self.scene.filePath)
+        self._animationRange = kwargs.pop('animationRange', self.scene.animationRange)
         self._nodes = notifylist.NotifyList()
         self._animLayers = notifylist.NotifyList()
-        self._thumbnail = kwargs.get('thumbnail', None)
+        self._thumbnail = kwargs.pop('thumbnail', None)
 
-        # Setup notifies
+        # Initialize notifies
         #
         self._nodes.addCallback('itemAdded', self.nodeAdded)
         self._nodes.addCallback('itemRemoved', self.nodeRemoved)
-        self._nodes.extend(kwargs.get('nodes', []))
+        self._nodes.extend(kwargs.pop('nodes', []))
 
         self._animLayers.addCallback('itemAdded', self.animLayerAdded)
         self._animLayers.addCallback('itemRemoved', self.animLayerRemoved)
-        self._animLayers.extend(kwargs.get('animLayers', []))
+        self._animLayers.extend(kwargs.pop('animLayers', []))
     # endregion
 
     # region Properties
@@ -613,7 +613,9 @@ class Pose(melsonobject.MELSONObject):
         # Create new instance and add nodes
         #
         instance = cls(**kwargs)
-        instance.nodes = [PoseNode.create(node, **kwargs) for node in nodes]
+
+        animationRange = kwargs.pop('animationRange', instance.animationRange)
+        instance.nodes = [PoseNode.create(node, animationRange=animationRange, **kwargs) for node in nodes]
 
         # Check if anim layers should be added
         #
@@ -662,14 +664,14 @@ class PoseNode(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._pose = self.nullWeakReference
-        self._name = kwargs.get('name', '')
-        self._namespace = kwargs.get('namespace', '')
-        self._uuid = kwargs.get('uuid', '')
-        self._path = kwargs.get('path', '')
-        self._attributes = kwargs.get('attributes', [])
-        self._matrix = kwargs.get('matrix', om.MMatrix.kIdentity)
-        self._worldMatrix = kwargs.get('worldMatrix', om.MMatrix.kIdentity)
-        self._transformations = kwargs.get('transformations', {})
+        self._name = kwargs.pop('name', '')
+        self._namespace = kwargs.pop('namespace', '')
+        self._uuid = kwargs.pop('uuid', '')
+        self._path = kwargs.pop('path', '')
+        self._attributes = kwargs.pop('attributes', [])
+        self._matrix = kwargs.pop('matrix', om.MMatrix.kIdentity)
+        self._worldMatrix = kwargs.pop('worldMatrix', om.MMatrix.kIdentity)
+        self._transformations = kwargs.pop('transformations', {})
     # endregion
 
     # region Properties
@@ -990,12 +992,6 @@ class PoseNode(melsonobject.MELSONObject):
 
         for attribute in self.attributes:
 
-            # Check if attribute has animation
-            #
-            if len(attribute.keyframes) == 0:
-
-                continue
-
             # Check if attribute exists
             #
             if not node.hasAttr(attribute.name):
@@ -1003,19 +999,31 @@ class PoseNode(melsonobject.MELSONObject):
                 log.warning(f'Cannot locate "{attribute.name}" attribute from "{nodeName}" node!')
                 continue
 
-            # Check if plug is animatable
+            # Check if plug is writable
             #
             plug = node.findPlug(attribute.name)
+            isWritable = plugutils.isWritable(plug)
+
+            if not isWritable:
+
+                log.warning(f'Skipping non-writable "{attribute.name}" attribute on "{nodeName}" node!')
+                continue
+
+            # Check if plug is animatable
+            #
             isAnimatable = plugutils.isAnimatable(plug)
+            hasKeyframes = not stringutils.isNullOrEmpty(attribute.keyframes)
 
-            if not isAnimatable:
+            if not isAnimatable or not hasKeyframes:
 
-                log.warning(f'Skipping "{attribute.name}" non-keyable attribute on "{nodeName}" node!')
+                node.setAttr(plug, attribute.value)  # Just update the value and continue to the next attribute
                 continue
 
             # Check if user attributes should be skipped
             #
-            if skipUserAttributes and plug.isDynamic:
+            isUserAttribute = bool(plug.isDynamic)
+
+            if skipUserAttributes and isUserAttribute:
 
                 log.debug(f'Skipping "{attribute.name}" user attribute on "{nodeName}" node!')
                 continue
@@ -1220,12 +1228,12 @@ class PoseAttribute(melsonobject.MELSONObject):
 
         # Declare private variables
         #
-        self._name = kwargs.get('name', '')
-        self._value = kwargs.get('value', 0.0)
-        self._preInfinityType = kwargs.get('preInfinityType', 0)
-        self._postInfinityType = kwargs.get('postInfinityType', 0)
-        self._weighted = kwargs.get('weighted', False)
-        self._keyframes = kwargs.get('keyframes', [])
+        self._name = kwargs.pop('name', '')
+        self._value = kwargs.pop('value', 0.0)
+        self._preInfinityType = kwargs.pop('preInfinityType', 0)
+        self._postInfinityType = kwargs.pop('postInfinityType', 0)
+        self._weighted = kwargs.pop('weighted', False)
+        self._keyframes = kwargs.pop('keyframes', [])
     # endregion
 
     # region Properties
@@ -1450,13 +1458,13 @@ class PoseMember(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._animLayer = self.nullWeakReference
-        self._name = kwargs.get('name', '')
-        self._attribute = kwargs.get('attribute', '')
-        self._value = kwargs.get('value', 0.0)
-        self._preInfinityType = kwargs.get('preInfinityType', 0)
-        self._postInfinityType = kwargs.get('postInfinityType', 0)
-        self._weighted = kwargs.get('weighted', False)
-        self._keyframes = kwargs.get('keyframes', [])
+        self._name = kwargs.pop('name', '')
+        self._attribute = kwargs.pop('attribute', '')
+        self._value = kwargs.pop('value', 0.0)
+        self._preInfinityType = kwargs.pop('preInfinityType', 0)
+        self._postInfinityType = kwargs.pop('postInfinityType', 0)
+        self._weighted = kwargs.pop('weighted', False)
+        self._keyframes = kwargs.pop('keyframes', [])
     # endregion
 
     # region Properties
@@ -1697,30 +1705,30 @@ class PoseAnimLayer(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._pose = self.nullWeakReference
-        self._name = kwargs.get('name', '')
-        self._parent = kwargs.get('parent', self.nullWeakReference)
+        self._name = kwargs.pop('name', '')
+        self._parent = kwargs.pop('parent', self.nullWeakReference)
         self._children = notifylist.NotifyList()
         self._members = notifylist.NotifyList()
-        self._mute = kwargs.get('mute', False)
-        self._solo = kwargs.get('solo', False)
-        self._lock = kwargs.get('lock', False)
-        self._ghost = kwargs.get('ghost', False)
-        self._ghostColor = kwargs.get('ghostColor', 5)
-        self._override = kwargs.get('override', False)
-        self._passthrough = kwargs.get('passthrough', True)
-        self._weight = kwargs.get('weight', 1.0)
-        self._rotationAccumulationMode = kwargs.get('rotationAccumulationMode', 0)
-        self._scaleAccumulationMode = kwargs.get('scaleAccumulationMode', 1)
+        self._mute = kwargs.pop('mute', False)
+        self._solo = kwargs.pop('solo', False)
+        self._lock = kwargs.pop('lock', False)
+        self._ghost = kwargs.pop('ghost', False)
+        self._ghostColor = kwargs.pop('ghostColor', 5)
+        self._override = kwargs.pop('override', False)
+        self._passthrough = kwargs.pop('passthrough', True)
+        self._weight = kwargs.pop('weight', 1.0)
+        self._rotationAccumulationMode = kwargs.pop('rotationAccumulationMode', 0)
+        self._scaleAccumulationMode = kwargs.pop('scaleAccumulationMode', 1)
 
-        # Setup notifies
+        # Initialize notifies
         #
         self._children.addCallback('itemAdded', self.layerAdded)
         self._children.addCallback('itemRemoved', self.layerRemoved)
-        self._children.extend(kwargs.get('children', []))
+        self._children.extend(kwargs.pop('children', []))
 
         self._members.addCallback('itemAdded', self.memberAdded)
         self._members.addCallback('itemRemoved', self.memberRemoved)
-        self._members.extend(kwargs.get('members', []))
+        self._members.extend(kwargs.pop('members', []))
     # endregion
 
     # region Properties
