@@ -222,7 +222,7 @@ class QAnimInputDialog(qmaindialog.QMainDialog):
         """
         Returns the range value.
 
-        :rtype: Tuple[int, int]
+        :rtype: Union[Tuple[int, int], None]
         """
 
         enabled = self.segmentCheckBox.isChecked()
@@ -233,7 +233,7 @@ class QAnimInputDialog(qmaindialog.QMainDialog):
 
         else:
 
-            return self.defaultRangeValue()
+            return None
 
     def defaultRangeValue(self):
         """
@@ -241,6 +241,7 @@ class QAnimInputDialog(qmaindialog.QMainDialog):
 
         :rtype: Tuple[int, int]
         """
+
         return int(mc.playbackOptions(query=True, min=True)), int(mc.playbackOptions(query=True, max=True))
 
     @classmethod

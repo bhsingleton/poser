@@ -8,7 +8,7 @@ from dcc.python import stringutils
 from dcc.dataclasses import keyframe
 from dcc.collections import notifylist, notifydict
 from dcc.generators.inclusiverange import inclusiveRange
-from dcc.maya.libs import plugutils, plugmutators, transformutils, animutils
+from dcc.maya.libs import sceneutils, transformutils, plugutils, plugmutators, animutils
 from dcc.maya.json import melsonobject
 from dcc.maya.decorators import animate
 
@@ -613,9 +613,7 @@ class Pose(melsonobject.MELSONObject):
         # Create new instance and add nodes
         #
         instance = cls(**kwargs)
-
-        animationRange = kwargs.pop('animationRange', instance.animationRange)
-        instance.nodes = [PoseNode.create(node, animationRange=animationRange, **kwargs) for node in nodes]
+        instance.nodes = [PoseNode.create(node, **kwargs) for node in nodes]
 
         # Check if anim layers should be added
         #
@@ -1179,7 +1177,7 @@ class PoseNode(melsonobject.MELSONObject):
 
         if not (skipTransformations or skipKeys):
 
-            animationRange = kwargs.get('animationRange', None)
+            animationRange = kwargs.get('animationRange', sceneutils.getAnimationRange())
             step = kwargs.get('step', 1)
 
             log.debug(f'Caching "{node.name()}" transformations!')
