@@ -235,29 +235,14 @@ class Pose(melsonobject.MELSONObject):
         """
         Returns the nodes associated with this pose.
 
-        :type namespace: str
+        :type namespace: Union[str, None]
         :rtype: List[mpynode.MPyNode]
         """
 
-        # Iterate through nodes
-        #
-        nodes = []
+        nodes = [node.getAssociatedNode(namespace=namespace) for node in self.nodes]
+        filteredNodes = list(filter(lambda node: node is not None, nodes))
 
-        for node in self.nodes:
-
-            # Check if node exists
-            #
-            nodeName = f'{node.namespace}:{node.name}' if self.isNullOrEmpty(namespace) else f'{namespace}:{node.name}'
-
-            if self.scene.doesNodeExist(nodeName):
-
-                nodes.append(self.scene(nodeName))
-
-            else:
-
-                continue
-
-        return nodes
+        return filteredNodes
 
     def selectAssociatedNodes(self, namespace=None):
         """
@@ -267,7 +252,7 @@ class Pose(melsonobject.MELSONObject):
         :rtype: None
         """
 
-        self.scene.setSelection([node.object() for node in self.getAssociatedNodes(namespace=namespace)])
+        self.scene.setSelection(self.getAssociatedNodes(namespace=namespace))
 
     def getPoseByName(self, name, namespace='', ignoreCase=False):
         """
@@ -865,6 +850,25 @@ class PoseNode(melsonobject.MELSONObject):
     # endregion
 
     # region Methods
+    def getAssociatedNode(self, namespace=None):
+        """
+        Returns the scene node associated with this pose node.
+
+        :type namespace: Union[str, None]
+        :rtype: mpynode.MPyNode
+        """
+
+        namespace = self.namespace if namespace is None else namespace
+        absoluteName = f'{namespace}:{self.name}'
+
+        if self.scene.doesNodeExist(absoluteName):
+
+            return self.scene(absoluteName)
+
+        else:
+
+            return None
+
     def getAttributeByName(self, name):
         """
         Returns the pose attribute with the specified name.
