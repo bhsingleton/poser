@@ -28,15 +28,17 @@ def createPose(*nodes, **kwargs):
     return Pose.create(*nodes, **kwargs)
 
 
-def dumpPose(pose):
+def dumpPose(pose, **kwargs):
     """
     Dumps the supplied pose into a string.
 
     :type pose: Union[Pose, List[Pose]]
+    :key indent: Union[int, None]
+    :key sort_keys: bool
     :rtype: str
     """
 
-    return jsonutils.dumps(pose, cls=MDataEncoder)
+    return jsonutils.dumps(pose, cls=MDataEncoder, **kwargs)
 
 
 def loadPose(string):
