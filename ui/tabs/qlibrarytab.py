@@ -996,7 +996,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
                 str(path),
                 self.getSelection(),
                 skipKeys=False,
-                skipLayers=False,
+                skipLayers=True,
                 animationRange=animationRange
             )
 
