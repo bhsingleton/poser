@@ -323,6 +323,37 @@ class Pose(melsonobject.MELSONObject):
                 log.warning(f'Cannot find pose for "{name}" node!')
                 continue
 
+    def getKeyframeInputs(self):
+        """
+        Returns the keyframe inputs from this pose.
+
+        :rtype: List[int]
+        """
+
+        return list(set(chain(*[node.getKeyframeInputs() for node in self.nodes])))
+
+    def getKeyframeRange(self):
+        """
+        Returns the keyframe range from this pose.
+
+        :rtype: Tuple[int, int]
+        """
+
+        inputs = list(sorted(self.getKeyframeInputs()))
+        numInputs = len(inputs)
+
+        if numInputs == 0:
+
+            return None, None
+
+        elif numInputs == 1:
+
+            return inputs[0], inputs[0]
+
+        else:
+
+            return inputs[0], inputs[-1]
+
     def blendPose(self, otherPose, weight=0.0):
         """
         Blends this pose with the other pose.
@@ -473,8 +504,6 @@ class Pose(melsonobject.MELSONObject):
 
         # Evaluate bake method
         #
-        preserveKeys = kwargs.get('preserveKeys', False)
-
         animationRange = kwargs.get('animationRange', self.animationRange)
         startTime, endTime = animationRange
         step = kwargs.get('step', 1)
@@ -482,6 +511,8 @@ class Pose(melsonobject.MELSONObject):
         skipTranslate = kwargs.get('skipTranslate', False)
         skipRotate = kwargs.get('skipRotate', False)
         skipScale = kwargs.get('skipScale', True)
+
+        preserveKeys = kwargs.get('preserveKeys', False)
 
         if preserveKeys:
 
@@ -511,9 +542,7 @@ class Pose(melsonobject.MELSONObject):
                     self.scene.time = time
 
                     worldMatrix = pose.getTransformation(time)
-                    matrix = worldMatrix * node.parentInverseMatrix()
-
-                    node.setMatrix(matrix, skipTranslate=skipTranslate, skipRotate=skipRotate, skipScale=skipScale)
+                    node.setWorldMatrix(worldMatrix, skipTranslate=skipTranslate, skipRotate=skipRotate, skipScale=skipScale)
 
         else:
 
@@ -895,13 +924,29 @@ class PoseNode(melsonobject.MELSONObject):
         :rtype: List[int]
         """
 
-        inputs = set()
+        return list(set(chain(*[attribute.getKeyframeInputs() for attribute in self.attributes])))
 
-        for attribute in self.attributes:
+    def getKeyframeRange(self):
+        """
+        Returns the keyframe range from this node.
 
-            inputs.update([key.time for key in attribute.keyframes])
+        :rtype: Tuple[int, int]
+        """
 
-        return list(inputs)
+        inputs = list(sorted(self.getKeyframeInputs()))
+        numInputs = len(inputs)
+
+        if numInputs == 0:
+
+            return None, None
+
+        elif numInputs == 1:
+
+            return inputs[0], inputs[0]
+
+        else:
+
+            return inputs[0], inputs[-1]
 
     def getTransformation(self, time):
         """
@@ -1172,6 +1217,18 @@ class PoseNode(melsonobject.MELSONObject):
         :rtype: PoseNode
         """
 
+        # Create new pose node
+        #
+        instance = cls(
+            name=node.name(),
+            namespace=node.namespace(),
+            uuid=node.uuid(asString=True),
+            path=node.dagPath().fullPathName(),
+            attributes=[PoseAttribute.create(plug, **kwargs) for plug in node.iterPlugs(channelBox=True)],
+            matrix=node.matrix(),
+            worldMatrix=node.worldMatrix()
+        )
+
         # Check if transformations should be cached
         #
         skipKeys = kwargs.get('skipKeys', True)
@@ -1181,24 +1238,18 @@ class PoseNode(melsonobject.MELSONObject):
 
         if not (skipTransformations or skipKeys):
 
-            animationRange = kwargs.get('animationRange', sceneutils.getAnimationRange())
+            startTime, endTime = sceneutils.getAnimationRange()
+            startKeyframe, endKeyframe = instance.getKeyframeRange()
+            safeStartKeyframe, safeEndKeyframe = (startKeyframe if startKeyframe is not None else startTime), (endKeyframe if endKeyframe is not None else endTime)
+
+            defaultAnimationRange = (min(safeStartKeyframe, startTime), max(safeEndKeyframe, endTime))
+            animationRange = kwargs.get('animationRange', defaultAnimationRange)
             step = kwargs.get('step', 1)
 
-            log.debug(f'Caching "{node.name()}" transformations!')
-            transformations = node.cacheTransformations(animationRange=animationRange, step=step, worldSpace=True)
+            log.debug(f'Caching "{node.name()}" transformations: {animationRange[0]} > {animationRange[1]}!')
+            instance.transformations = node.cacheTransformations(animationRange=animationRange, step=step, worldSpace=True)
 
-        # Return new pose node
-        #
-        return cls(
-            name=node.name(),
-            namespace=node.namespace(),
-            uuid=node.uuid(asString=True),
-            path=node.dagPath().fullPathName(),
-            attributes=[PoseAttribute.create(plug, **kwargs) for plug in node.iterPlugs(channelBox=True)],
-            matrix=node.matrix(),
-            worldMatrix=node.worldMatrix(),
-            transformations=transformations
-        )
+        return instance
     # endregion
 
 
@@ -1368,6 +1419,15 @@ class PoseAttribute(melsonobject.MELSONObject):
     # endregion
 
     # region Methods
+    def getKeyframeInputs(self):
+        """
+        Returns a list of keyframe inputs for this attribute.
+
+        :rtype: List[float]
+        """
+
+        return list({keyframe.time for keyframe in self.keyframes})
+
     def getRange(self, startTime, endTime, invert=False):
         """
         Returns a range of keys from this attribute.
@@ -1807,7 +1867,7 @@ class PoseAnimLayer(melsonobject.MELSONObject):
         """
 
         self._members.clear()
-        self._members.update(members)
+        self._members.extend(members)
 
     @property
     def mute(self):
