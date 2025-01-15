@@ -571,6 +571,18 @@ class QAlignRollout(qrollout.QRollout, metaclass=qabcmeta.QABCMeta):
     # endregion
 
     # region Methods
+    def isValid(self):
+        """
+        Evaluates if the source and target are valid.
+
+        :rtype: bool
+        """
+
+        isSourceValid = self.scene.doesNodeExist(self.sourceName)
+        isTargetValid = self.scene.doesNodeExist(self.targetName)
+
+        return isSourceValid and isTargetValid
+
     def invalidate(self):
         """
         Re-concatenates the title of this rollout.
@@ -587,43 +599,73 @@ class QAlignRollout(qrollout.QRollout, metaclass=qabcmeta.QABCMeta):
 
     def apply(self):
         """
-        Aligns the target node to the source node over the specified amount of time.
+        Aligns the target node to the source node on the current frame.
 
         :rtype: None
         """
 
-        # Initialize source interface
+        # Check if alignment is valid
         #
-        isSourceValid = self.scene.doesNodeExist(self.sourceName)
+        isValid = self.isValid()
 
-        if not isSourceValid:
+        if not isValid:
 
-            log.warning('Unable to locate parent node: %s!' % self.sourceName)
+            log.warning(f'Unable to locate both "{self.sourceName}" parent and "{self.targetName}" child!')
             return
-
-        # Initialize target interface
-        #
-        isTargetValid = self.scene.doesNodeExist(self.targetName)
-
-        if not isTargetValid:
-
-            log.warning('Unable to locate child node: %s!' % self.sourceName)
-            return
-
-        # Collect skip flags
-        #
-        skipTranslate = self.alignTranslateXYZWidget.flags(prefix='skipTranslate', inverse=True)
-        skipRotate = self.alignRotateXYZWidget.flags(prefix='skipRotate', inverse=True)
-        skipScale = self.alignScaleXYZWidget.flags(prefix='skipScale', inverse=True)
 
         # Iterate through time range
         #
         sourceNode = self.scene(self.sourceName)
         targetNode = self.scene(self.targetName)
 
+        skipTranslate = self.alignTranslateXYZWidget.flags(prefix='skipTranslate', inverse=True)
+        skipRotate = self.alignRotateXYZWidget.flags(prefix='skipRotate', inverse=True)
+        skipScale = self.alignScaleXYZWidget.flags(prefix='skipScale', inverse=True)
+
+        currentTime = self.scene.time
+
         targetNode.alignTransformTo(
             sourceNode,
-            startTime=self.startTime, endTime=self.endTime, step=self.step,
+            startTime=currentTime,
+            endTime=currentTime,
+            maintainTranslate=self.maintainTranslate,
+            maintainRotate=self.maintainRotate,
+            maintainScale=self.maintainScale,
+            **skipTranslate,
+            **skipRotate,
+            **skipScale
+        )
+
+    def applyRange(self):
+        """
+        Aligns the target node to the source node over the specified amount of time.
+
+        :rtype: None
+        """
+
+        # Check if alignment is valid
+        #
+        isValid = self.isValid()
+
+        if not isValid:
+
+            log.warning(f'Unable to locate both "{self.sourceName}" parent and "{self.targetName}" child!')
+            return
+
+        # Iterate through time range
+        #
+        sourceNode = self.scene(self.sourceName)
+        targetNode = self.scene(self.targetName)
+
+        skipTranslate = self.alignTranslateXYZWidget.flags(prefix='skipTranslate', inverse=True)
+        skipRotate = self.alignRotateXYZWidget.flags(prefix='skipRotate', inverse=True)
+        skipScale = self.alignScaleXYZWidget.flags(prefix='skipScale', inverse=True)
+
+        targetNode.alignTransformTo(
+            sourceNode,
+            startTime=self.startTime,
+            endTime=self.endTime,
+            step=self.step,
             maintainTranslate=self.maintainTranslate,
             maintainRotate=self.maintainRotate,
             maintainScale=self.maintainScale,
@@ -761,6 +803,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
 
         self.alignPushButton = QtWidgets.QPushButton('Align')
         self.alignPushButton.setObjectName('alignPushButton')
+        self.alignPushButton.setToolTip('LMB to align frame range and LMB+Shift to align just the current frame.')
         self.alignPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
         self.alignPushButton.setFixedHeight(48)
         self.alignPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -794,6 +837,7 @@ class QAlignTab(qabstracttab.QAbstractTab):
         except json.JSONDecodeError as exception:
 
             log.warning(exception)
+            self.scene.properties['alignments'] = '[]'
 
         finally:
 
@@ -944,9 +988,19 @@ class QAlignTab(qabstracttab.QAbstractTab):
 
         # Iterate through alignments
         #
-        for alignment in self.iterAlignments(skipUnchecked=True):
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
 
-            alignment.apply()
+        if modifiers == QtCore.Qt.ShiftModifier:
+
+            for alignment in self.iterAlignments(skipUnchecked=True):
+
+                alignment.apply()
+
+        else:
+
+            for alignment in self.iterAlignments(skipUnchecked=True):
+
+                alignment.applyRange()
     # endregion
 
     # region Slots
