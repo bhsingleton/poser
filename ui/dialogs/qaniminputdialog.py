@@ -233,7 +233,7 @@ class QAnimInputDialog(qmaindialog.QMainDialog):
 
         else:
 
-            return None
+            return self.defaultRangeValue()
 
     def defaultRangeValue(self):
         """
