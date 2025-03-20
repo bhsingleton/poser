@@ -80,11 +80,11 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
 
         # Load rig configurations
         #
+        cls.__configurations__ = rigutils.loadConfigurations()
+
         settings = cls.getSettings()
         configIndex = settings.value('editor/currentConfiguration', defaultValue=-1, type=int)
-
-        cls.__configurations__ = rigutils.loadConfigurations()
-        cls.__configuration__ = cls.__configurations__[configIndex]
+        cls.setCurrentConfiguration(configIndex)
 
         # Load user namespaces
         #
@@ -540,32 +540,50 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         #
         if isinstance(configuration, integer_types):
 
-            configuration = cls.__configurations__[configuration]
-            cls.__configuration__ = configuration
+            # Check if index is valid
+            #
+            try:
+
+                cls.setCurrentConfiguration(cls.__configurations__[configuration])
+
+            except IndexError as exception:
+
+                log.debug(exception)
 
         elif isinstance(configuration, string_types):
 
-            configurations = [config.name for config in cls.__configurations__]
-            index = configurations.index(configuration)
-            configuration = cls.__configurations__[index]
+            # Check if named configuration exists
+            #
+            try:
 
-            cls.__configuration__ = configuration
+                configurations = [config.name for config in cls.__configurations__]
+                index = configurations.index(configuration)
+                configuration = cls.__configurations__[index]
+
+                cls.setCurrentConfiguration(configuration)
+
+            except ValueError as exception:
+
+                log.debug(exception)
 
         elif isinstance(configuration, rigconfiguration.RigConfiguration):
 
+            # Update internal dunderscore
+            #
             cls.__configuration__ = configuration
+
+            # Check if a window instance exists
+            # If so, update the rig configuration action text
+            #
+            instance = cls.getInstance()
+
+            if instance is not None:
+
+                instance.rigConfigurationAction.setText(f'Rig: {cls.__configuration__.name}')
 
         else:
 
             raise TypeError(f'setCurrentConfiguration() expects a valid configuration ({type(configuration).__name__} given)!')
-
-        # Update rig configuration action
-        #
-        instance = cls.getInstance()
-
-        if instance is not None:
-
-            instance.rigConfigurationAction.setText(f'Rig: {configuration.name}')
 
     @classmethod
     def controllerPatterns(cls):
