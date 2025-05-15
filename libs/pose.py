@@ -254,13 +254,14 @@ class Pose(melsonobject.MELSONObject):
 
         self.scene.setSelection(self.getAssociatedNodes(namespace=namespace))
 
-    def getPoseByName(self, name, namespace='', ignoreCase=False):
+    def getPoseByName(self, name, namespace='', ignoreCase=False, create=False):
         """
         Returns the pose node with the specified name.
 
         :type name: str
         :type namespace: str
         :type ignoreCase: bool
+        :type create: bool
         :rtype: Union[PoseNode, None]
         """
 
@@ -282,7 +283,16 @@ class Pose(melsonobject.MELSONObject):
 
         if numFound == 0:
 
-            return None
+            if create:
+
+                node = PoseNode(name=name)
+                self.nodes.append(node)
+
+                return node
+
+            else:
+
+                return None
 
         elif numFound == 1:
 
@@ -1077,6 +1087,8 @@ class PoseNode(melsonobject.MELSONObject):
 
             # Apply keyframes to animation curve
             #
+            log.debug(f'Apply keyframes to: {plug.info}')
+
             animCurve = node.findAnimCurve(plug, create=True)
             animCurve.setIsWeighted(attribute.weighted)
             animCurve.setPreInfinityType(attribute.preInfinityType)
@@ -1201,6 +1213,9 @@ class PoseNode(melsonobject.MELSONObject):
             # Apply keyframes to animation curve
             #
             animCurve = otherNode.findAnimCurve(plug, create=True)
+            animCurve.setPreInfinityType(attribute.preInfinityType)
+            animCurve.setPostInfinityType(attribute.postInfinityType)
+            animCurve.setIsWeighted(attribute.weighted)
             animCurve.replaceKeys(keyframes, insertAt=insertAt, animationRange=animationRange)
 
     @classmethod
