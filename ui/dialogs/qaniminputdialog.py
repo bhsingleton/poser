@@ -1,6 +1,6 @@
 from maya import cmds as mc
-from Qt import QtCore, QtWidgets, QtGui
 from itertools import chain
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 from dcc.ui import qtimespinbox
 from dcc.ui.dialogs import qmaindialog
 

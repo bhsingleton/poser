@@ -2,7 +2,7 @@ import json
 
 from maya.api import OpenMaya as om
 from mpy import mpyscene
-from Qt import QtCore, QtWidgets, QtGui, QtCompat
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.ui import qrollout, qdivider, qtimespinbox, qxyzwidget, qseparator
 from dcc.ui.abstract import qabcmeta
 from dcc.python import stringutils

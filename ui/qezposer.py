@@ -3,13 +3,13 @@ import webbrowser
 
 from maya.api import OpenMaya as om
 from mpy import mpyscene, mpynode
-from Qt import QtCore, QtWidgets, QtGui, QtCompat
-from six import string_types, integer_types
 from fnmatch import fnmatchcase
 from itertools import chain
 from dcc.python import stringutils
 from dcc.ui import qsingletonwindow
 from dcc.maya.libs import hotkeyutils
+from dcc.vendor.six import string_types, integer_types
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.decorators.staticinitializer import staticInitializer
 from dcc.decorators.classproperty import classproperty
 from dcc.maya.decorators import undo

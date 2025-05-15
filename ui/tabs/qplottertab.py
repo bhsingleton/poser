@@ -1,6 +1,6 @@
-from Qt import QtCore, QtWidgets, QtGui
 from maya.api import OpenMaya as om
 from dcc.python import stringutils
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 from dcc.ui import qtimespinbox, qdivider
 from dcc.maya.decorators import undo
 from dcc.collections import notifylist

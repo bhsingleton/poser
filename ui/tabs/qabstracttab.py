@@ -1,7 +1,7 @@
-from Qt import QtCore, QtWidgets, QtGui
 from abc import abstractmethod
 from mpy import mpyscene
 from dcc.ui.abstract import qabcmeta
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import logging
 logging.basicConfig()

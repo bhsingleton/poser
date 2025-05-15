@@ -3,9 +3,9 @@ import json
 import subprocess
 
 from maya.api import OpenMaya as om
-from Qt import QtCore, QtWidgets, QtGui
 from fnmatch import fnmatchcase
 from dcc.python import stringutils
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 from dcc.ui import qdropdownbutton, qtimespinbox, qxyzwidget, qpersistentmenu, qdivider
 from dcc.ui.models import qfileitemmodel, qfileitemfiltermodel
 from dcc.maya.decorators import undo

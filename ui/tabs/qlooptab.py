@@ -1,7 +1,7 @@
 from maya.api import OpenMaya as om, OpenMayaAnim as oma
-from Qt import QtCore, QtWidgets, QtGui
 from enum import IntEnum
 from dcc.python import stringutils
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 from dcc.ui import qtimespinbox, qdivider
 from dcc.maya.decorators import undo
 from . import qabstracttab
