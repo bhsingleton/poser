@@ -756,9 +756,9 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
 
             # Check if invisible nodes should be skipped
             #
-            isVisible = node.dagPath().isVisible()
+            isSelectable = node.isSelectable()
 
-            if visible and not isVisible:
+            if visible and not isSelectable:
 
                 continue
 
