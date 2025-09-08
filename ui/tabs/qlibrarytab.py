@@ -352,13 +352,48 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.pastePosePushButton.setToolTip('Pastes the pose from the clipboard.')
         self.pastePosePushButton.clicked.connect(self.on_pastePosePushButton_clicked)
 
-        self.zeroPosePushButton = QtWidgets.QPushButton('Zero Pose')
-        self.zeroPosePushButton.setObjectName('zeroPosePushButton')
-        self.zeroPosePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
-        self.zeroPosePushButton.setFixedHeight(24)
-        self.zeroPosePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.zeroPosePushButton.setToolTip('Resets all transform attributes to their default value.')
-        self.zeroPosePushButton.clicked.connect(self.on_zeroPosePushButton_clicked)
+        self.zeroAllPushButton = QtWidgets.QPushButton('Zero')
+        self.zeroAllPushButton.setObjectName('zeroAllPushButton')
+        self.zeroAllPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.zeroAllPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.zeroAllPushButton.setToolTip('Resets all transform attributes back to their default value.')
+        self.zeroAllPushButton.clicked.connect(self.on_zeroAllPushButton_clicked)
+
+        self.zeroPositionPushButton = QtWidgets.QPushButton('Pos')
+        self.zeroPositionPushButton.setObjectName('zeroPositionPushButton')
+        self.zeroPositionPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.zeroPositionPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.zeroPositionPushButton.setToolTip('Resets the translate attributes back to their default value.')
+        self.zeroPositionPushButton.clicked.connect(self.on_zeroPositionPushButton_clicked)
+        
+        self.zeroRotationPushButton = QtWidgets.QPushButton('Rot')
+        self.zeroRotationPushButton.setObjectName('zeroRotationPushButton')
+        self.zeroRotationPushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.zeroRotationPushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.zeroRotationPushButton.setToolTip('Resets the rotate attributes back to their default value.')
+        self.zeroRotationPushButton.clicked.connect(self.on_zeroRotationPushButton_clicked)
+        
+        self.zeroScalePushButton = QtWidgets.QPushButton('Scale')
+        self.zeroScalePushButton.setObjectName('zeroScalePushButton')
+        self.zeroScalePushButton.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        self.zeroScalePushButton.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.zeroScalePushButton.setToolTip('Resets the scale attributes back to their default value.')
+        self.zeroScalePushButton.clicked.connect(self.on_zeroScalePushButton_clicked)
+
+        self.zeroButtonsLayout = QtWidgets.QHBoxLayout()
+        self.zeroButtonsLayout.setObjectName('zeroButtonsLayout')
+        self.zeroButtonsLayout.setContentsMargins(0, 0, 0, 0)
+        self.zeroButtonsLayout.setSpacing(1)
+        self.zeroButtonsLayout.addWidget(self.zeroAllPushButton)
+        self.zeroButtonsLayout.addWidget(self.zeroPositionPushButton)
+        self.zeroButtonsLayout.addWidget(self.zeroRotationPushButton)
+        self.zeroButtonsLayout.addWidget(self.zeroScalePushButton)
+
+        self.zeroButtonsWidget = QtWidgets.QWidget()
+        self.zeroButtonsWidget.setObjectName('zeroButtonsWidget')
+        self.zeroButtonsWidget.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed))
+        self.zeroButtonsWidget.setFixedHeight(24)
+        self.zeroButtonsWidget.setLayout(self.zeroButtonsLayout)
 
         self.resetPosePushButton = QtWidgets.QPushButton('Reset Pose')
         self.resetPosePushButton.setObjectName('resetPosePushButton')
@@ -449,7 +484,7 @@ class QLibraryTab(qabstracttab.QAbstractTab):
 
         self.quickPoseLayout.addWidget(self.copyPosePushButton, 0, 0)
         self.quickPoseLayout.addWidget(self.pastePosePushButton, 0, 1)
-        self.quickPoseLayout.addWidget(self.zeroPosePushButton, 1, 0)
+        self.quickPoseLayout.addWidget(self.zeroButtonsWidget, 1, 0)
         self.quickPoseLayout.addWidget(self.resetPosePushButton, 1, 1)
         self.quickPoseLayout.addWidget(qdivider.QDivider(QtCore.Qt.Horizontal), 2, 0, 1, 2)
         self.quickPoseLayout.addWidget(self.holdTransformPushButton, 3, 0)
@@ -1163,17 +1198,39 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self._poseClipboard.applyTo(*selection, namespace=namespace)
 
     @undo.Undo(name='Reset Pose')
-    def resetPose(self, skipUserAttributes=False):
+    def resetPose(self, **kwargs):
         """
         Resets the transforms on the active selection.
 
+        :type skipTranslate: bool
+        :type skipRotate: bool
+        :type skipScale: bool
         :type skipUserAttributes: bool
         :rtype: None
         """
 
+        skipTranslate = kwargs.get('skipTranslate', False)
+        skipRotate = kwargs.get('skipRotate', False)
+        skipScale = kwargs.get('skipScale', False)
+        skipUserAttributes = kwargs.get('skipUserAttributes', False)
+
         for node in self.scene.iterSelection(apiType=om.MFn.kTransform):
 
-            node.resetTransform(skipUserAttributes=skipUserAttributes)
+            if not skipTranslate:
+
+                node.resetTranslation()
+
+            if not skipRotate:
+
+                node.resetEulerRotation()
+
+            if not skipScale:
+
+                node.resetScale()
+
+            if not skipUserAttributes:
+
+                node.resetUserAttributes()
 
     @undo.Undo(state=False)
     def holdPose(self):
@@ -1636,44 +1693,40 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.pickRelativeTarget()
 
     @QtCore.Slot(bool)
-    def on_selectVisiblePushButton_clicked(self, checked=False):
+    def on_selectVisiblePushButton_clicked(self):
         """
         Slot method for the selectVisiblePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.selectControls(visible=True)
 
     @QtCore.Slot(bool)
-    def on_selectAllPushButton_clicked(self, checked=False):
+    def on_selectAllPushButton_clicked(self):
         """
         Slot method for the selectAllPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.selectControls(visible=False)
 
     @QtCore.Slot(bool)
-    def on_selectAssociatedPushButton_clicked(self, checked=False):
+    def on_selectAssociatedPushButton_clicked(self):
         """
         Slot method for the selectLayerPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.selectAssociatedControls()
 
     @QtCore.Slot(bool)
-    def on_selectOppositePushButton_clicked(self, checked=False):
+    def on_selectOppositePushButton_clicked(self):
         """
         Slot method for the selectPosePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -1683,66 +1736,90 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.selectOppositeControls(replace=replace)
 
     @QtCore.Slot(bool)
-    def on_copyPosePushButton_clicked(self, checked=False):
+    def on_copyPosePushButton_clicked(self):
         """
         Slot method for the copyPosePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.copyPose()
 
     @QtCore.Slot(bool)
-    def on_pastePosePushButton_clicked(self, checked=False):
+    def on_pastePosePushButton_clicked(self):
         """
         Slot method for the pastePosePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.pastePose()
 
-    @QtCore.Slot(bool)
-    def on_zeroPosePushButton_clicked(self, checked=False):
+    @QtCore.Slot()
+    def on_zeroAllPushButton_clicked(self):
         """
-        Slot method for the resetPosePushButton's `clicked` signal.
+        Slot method for the zeroAllPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.resetPose(skipUserAttributes=True)
 
     @QtCore.Slot(bool)
-    def on_resetPosePushButton_clicked(self, checked=False):
+    def on_zeroPositionPushButton_clicked(self):
+        """
+        Slot method for the zeroPositionPushButton's `clicked` signal.
+
+        :rtype: None
+        """
+
+        self.resetPose(skipRotate=True, skipScale=True, skipUserAttributes=True)
+
+    @QtCore.Slot(bool)
+    def on_zeroRotationPushButton_clicked(self):
+        """
+        Slot method for the zeroRotationPushButton's `clicked` signal.
+
+        :rtype: None
+        """
+
+        self.resetPose(skipTranslate=True, skipScale=True, skipUserAttributes=True)
+
+    @QtCore.Slot(bool)
+    def on_zeroScalePushButton_clicked(self):
+        """
+        Slot method for the zeroScalePushButton's `clicked` signal.
+
+        :rtype: None
+        """
+
+        self.resetPose(skipTranslate=True, skipRotate=True, skipUserAttributes=True)
+
+    @QtCore.Slot(bool)
+    def on_resetPosePushButton_clicked(self):
         """
         Slot method for the resetPosePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.resetPose(skipUserAttributes=False)
 
     @QtCore.Slot(bool)
-    def on_holdTransformPushButton_clicked(self, checked=False):
+    def on_holdTransformPushButton_clicked(self):
         """
         Slot method for the holdTransformPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.holdPose()
 
     @QtCore.Slot(bool)
-    def on_fetchTransformPushButton_clicked(self, checked=False):
+    def on_fetchTransformPushButton_clicked(self):
         """
         Slot method for the fetchTransformPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -1761,11 +1838,10 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.fetchPose()
 
     @QtCore.Slot(bool)
-    def on_rightFetchTransformPushButton_clicked(self, checked=False):
+    def on_rightFetchTransformPushButton_clicked(self):
         """
         Slot method for the rightFetchTransformPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -1773,33 +1849,30 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.fetchPose()
 
     @QtCore.Slot(bool)
-    def on_mirrorPosePushButton_clicked(self, checked=False):
+    def on_mirrorPosePushButton_clicked(self):
         """
         Slot method for the mirrorPosePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.mirrorPose(pull=False)
 
     @QtCore.Slot(bool)
-    def on_pullPosePushButton_clicked(self, checked=False):
+    def on_pullPosePushButton_clicked(self):
         """
         Slot method for the pullPosePushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
         self.mirrorPose(pull=True)
 
     @QtCore.Slot(bool)
-    def on_mirrorAnimationPushButton_clicked(self, checked=False):
+    def on_mirrorAnimationPushButton_clicked(self):
         """
         Slot method for the mirrorAnimationPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
@@ -1807,11 +1880,10 @@ class QLibraryTab(qabstracttab.QAbstractTab):
         self.mirrorAnimation(insertAt, (startTime, endTime), pull=False)
 
     @QtCore.Slot(bool)
-    def on_pullAnimationPushButton_clicked(self, checked=False):
+    def on_pullAnimationPushButton_clicked(self):
         """
         Slot method for the pullAnimationPushButton's `clicked` signal.
 
-        :type checked: bool
         :rtype: None
         """
 
