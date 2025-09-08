@@ -49,22 +49,20 @@ class Pose(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._scene = mpyscene.MPyScene.getInstance(asWeakReference=True)
-        self._name = kwargs.pop('name', self.scene.name)
-        self._filePath = kwargs.pop('filePath', self.scene.filePath)
-        self._animationRange = kwargs.pop('animationRange', self.scene.animationRange)
+        self._name = self.scene.name
+        self._filePath = self.scene.filePath
+        self._animationRange = self.scene.animationRange
         self._nodes = notifylist.NotifyList()
         self._animLayers = notifylist.NotifyList()
-        self._thumbnail = kwargs.pop('thumbnail', None)
+        self._thumbnail = None
 
         # Initialize notifies
         #
         self._nodes.addCallback('itemAdded', self.nodeAdded)
         self._nodes.addCallback('itemRemoved', self.nodeRemoved)
-        self._nodes.extend(kwargs.pop('nodes', []))
 
         self._animLayers.addCallback('itemAdded', self.animLayerAdded)
         self._animLayers.addCallback('itemRemoved', self.animLayerRemoved)
-        self._animLayers.extend(kwargs.pop('animLayers', []))
     # endregion
 
     # region Properties
@@ -686,14 +684,14 @@ class PoseNode(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._pose = self.nullWeakReference
-        self._name = kwargs.pop('name', '')
-        self._namespace = kwargs.pop('namespace', '')
-        self._uuid = kwargs.pop('uuid', '')
-        self._path = kwargs.pop('path', '')
-        self._attributes = kwargs.pop('attributes', [])
-        self._matrix = kwargs.pop('matrix', om.MMatrix.kIdentity)
-        self._worldMatrix = kwargs.pop('worldMatrix', om.MMatrix.kIdentity)
-        self._transformations = kwargs.pop('transformations', {})
+        self._name = ''
+        self._namespace = ''
+        self._uuid = ''
+        self._path = ''
+        self._attributes = []
+        self._matrix = om.MMatrix.kIdentity
+        self._worldMatrix = om.MMatrix.kIdentity
+        self._transformations = {}
     # endregion
 
     # region Properties
@@ -1296,12 +1294,12 @@ class PoseAttribute(melsonobject.MELSONObject):
 
         # Declare private variables
         #
-        self._name = kwargs.pop('name', '')
-        self._value = kwargs.pop('value', 0.0)
-        self._preInfinityType = kwargs.pop('preInfinityType', 0)
-        self._postInfinityType = kwargs.pop('postInfinityType', 0)
-        self._weighted = kwargs.pop('weighted', False)
-        self._keyframes = kwargs.pop('keyframes', [])
+        self._name = ''
+        self._value = 0.0
+        self._preInfinityType = 0
+        self._postInfinityType = 0
+        self._weighted = False
+        self._keyframes = []
     # endregion
 
     # region Properties
@@ -1512,7 +1510,7 @@ class PoseMember(melsonobject.MELSONObject):
     # region Dunderscores
     __slots__ = (
         '_animLayer',
-        '_name',
+        '_node',
         '_attribute',
         '_value',
         '_preInfinityType',
@@ -1535,13 +1533,13 @@ class PoseMember(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._animLayer = self.nullWeakReference
-        self._name = kwargs.pop('name', '')
-        self._attribute = kwargs.pop('attribute', '')
-        self._value = kwargs.pop('value', 0.0)
-        self._preInfinityType = kwargs.pop('preInfinityType', 0)
-        self._postInfinityType = kwargs.pop('postInfinityType', 0)
-        self._weighted = kwargs.pop('weighted', False)
-        self._keyframes = kwargs.pop('keyframes', [])
+        self._node = ''
+        self._attribute = ''
+        self._value = 0.0
+        self._preInfinityType = 0
+        self._postInfinityType = 0
+        self._weighted = False
+        self._keyframes = []
     # endregion
 
     # region Properties
@@ -1782,30 +1780,28 @@ class PoseAnimLayer(melsonobject.MELSONObject):
         # Declare private variables
         #
         self._pose = self.nullWeakReference
-        self._name = kwargs.pop('name', '')
-        self._parent = kwargs.pop('parent', self.nullWeakReference)
+        self._name = ''
+        self._parent = self.nullWeakReference
         self._children = notifylist.NotifyList()
         self._members = notifylist.NotifyList()
-        self._mute = kwargs.pop('mute', False)
-        self._solo = kwargs.pop('solo', False)
-        self._lock = kwargs.pop('lock', False)
-        self._ghost = kwargs.pop('ghost', False)
-        self._ghostColor = kwargs.pop('ghostColor', 5)
-        self._override = kwargs.pop('override', False)
-        self._passthrough = kwargs.pop('passthrough', True)
-        self._weight = kwargs.pop('weight', 1.0)
-        self._rotationAccumulationMode = kwargs.pop('rotationAccumulationMode', 0)
-        self._scaleAccumulationMode = kwargs.pop('scaleAccumulationMode', 1)
+        self._mute = False
+        self._solo = False
+        self._lock = False
+        self._ghost = False
+        self._ghostColor = 5
+        self._override = False
+        self._passthrough = True
+        self._weight = 1.0
+        self._rotationAccumulationMode = 0
+        self._scaleAccumulationMode = 1
 
         # Initialize notifies
         #
         self._children.addCallback('itemAdded', self.layerAdded)
         self._children.addCallback('itemRemoved', self.layerRemoved)
-        self._children.extend(kwargs.pop('children', []))
 
         self._members.addCallback('itemAdded', self.memberAdded)
         self._members.addCallback('itemRemoved', self.memberRemoved)
-        self._members.extend(kwargs.pop('members', []))
     # endregion
 
     # region Properties
