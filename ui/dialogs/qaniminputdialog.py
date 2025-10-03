@@ -253,7 +253,7 @@ class QAnimInputDialog(qmaindialog.QMainDialog):
         :type title: str
         :type label: str
         :type mode: int
-        :rtype: Tuple[str, Tuple[int, int]]
+        :rtype: Tuple[str, Tuple[int, int], int]
         """
 
         instance = cls(title=title, label=label, mode=mode, parent=parent)
