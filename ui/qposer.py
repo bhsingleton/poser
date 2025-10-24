@@ -403,7 +403,7 @@ class QPoser(qsingletonwindow.QSingletonWindow):
         directory = os.path.abspath(os.path.dirname(__file__))
         filePath = os.path.abspath(os.path.join(directory, '..', 'hotkeys', 'poser.json'))
 
-        hotkeyutils.installRuntimeCommandsFromFile(filePath)
+        hotkeyutils.installRuntimeCommands(filePath)
 
     def currentTab(self):
         """
