@@ -1,0 +1,44 @@
+[
+  {
+    "name": "RigConfiguration",
+    "nameChange": "",
+    "path": "ezposer.libs.rigconfiguration",
+    "pathChange": "poser.libs.rigconfiguration",
+    "properties": {}
+  },
+  {
+    "name": "Pose",
+    "nameChange": "",
+    "path": "ezposer.libs.pose",
+    "pathChange": "poser.libs.pose",
+    "properties": {}
+  },
+  {
+    "name": "PoseNode",
+    "nameChange": "",
+    "path": "ezposer.libs.pose",
+    "pathChange": "poser.libs.pose",
+    "properties": {}
+  },
+  {
+    "name": "PoseAttribute",
+    "nameChange": "",
+    "path": "ezposer.libs.pose",
+    "pathChange": "poser.libs.pose",
+    "properties": {}
+  },
+  {
+    "name": "PoseMember",
+    "nameChange": "",
+    "path": "ezposer.libs.pose",
+    "pathChange": "poser.libs.pose",
+    "properties": {}
+  },
+  {
+    "name": "PoseAnimLayer",
+    "nameChange": "",
+    "path": "ezposer.libs.pose",
+    "pathChange": "poser.libs.pose",
+    "properties": {}
+  }
+]

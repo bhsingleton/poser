@@ -1,12 +1,12 @@
 {
-	"category": "Ez'Poser",
+	"category": "Poser",
 	"commands": [
 		{
 			"name": "selectControlsCommand",
 			"annotation": "Selects all keyable controls from the scene.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.selectControls(visible=False)"
 			]
 		},
@@ -15,7 +15,7 @@
 			"annotation": "Selects all visible controls from the scene.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.selectControls(visible=True)"
 			]
 		},
@@ -24,7 +24,7 @@
 			"annotation": "Selects the controls that are in the associated layers.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.selectAssociatedControls()"
 			]
 		},
@@ -33,7 +33,7 @@
 			"annotation": "Toggles the visibility for all animatable nodes.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.toggleControllerVisibility()"
 			]
 		},
@@ -42,7 +42,7 @@
 			"annotation": "Toggles the playback.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.togglePlayback()"
 			]
 		},
@@ -51,7 +51,7 @@
 			"annotation": "Toggles the playback speed between full, half and quarter.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.togglePlaybackSpeed()"
 			]
 		},
@@ -60,7 +60,7 @@
 			"annotation": "Toggles the move manipulator between World and Object.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.toggleMoveManipMode()"
 			]
 		},
@@ -69,7 +69,7 @@
 			"annotation": "Toggles the rotate manipulator between World, Object and Gimbal.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.toggleRotateManipMode()"
 			]
 		},
@@ -78,7 +78,7 @@
 			"annotation": "Toggles the viewport without the hotbox.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.toggleViewport()"
 			]
 		},
@@ -87,7 +87,7 @@
 			"annotation": "Frames the camera to all visible objects.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.frameVisible()"
 			]
 		},
@@ -96,7 +96,7 @@
 			"annotation": "Keys the selected channel-box attributes, if no attributes are selected then all attributes are keyed instead.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.keySelectedAttributes()"
 			]
 		},
@@ -105,7 +105,7 @@
 			"annotation": "Keys the translate, rotate and scale attributes on the selected nodes.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.keyTransforms()"
 			]
 		},
@@ -114,7 +114,7 @@
 			"annotation": "Resets the transforms on the selected objects.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.resetTransforms()"
 			]
 		},
@@ -129,7 +129,7 @@
 			"annotation": "Deletes all animation from the selected objects.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.deleteSelectedAnimation()"
 			]
 		},
@@ -138,7 +138,7 @@
 			"annotation": "Deletes any translate keys at the current time.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.deleteSingleTranslateKey()"
 			]
 		},
@@ -147,7 +147,7 @@
 			"annotation": "Deletes any rotate keys at the current time.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.deleteSingleRotateKey()"
 			]
 		},
@@ -156,7 +156,7 @@
 			"annotation": "Deletes any scale keys at the current time.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.deleteSingleScaleKey()"
 			]
 		},
@@ -165,7 +165,7 @@
 			"annotation": "Deletes any overlapping keys from the active selection.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.deleteOverlappingKeys()"
 			]
 		},
@@ -174,7 +174,7 @@
 			"annotation": "Goes to the next frame with undo disabled.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.goToNextFrame()"
 			]
 		},
@@ -183,7 +183,7 @@
 			"annotation": "Goes to the previous frame with undo disabled.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.goToPreviousFrame()"
 			]
 		},
@@ -192,7 +192,7 @@
 			"annotation": "Goes to the next keyframe with undo disabled.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.goToNextKeyframe()"
 			]
 		},
@@ -201,7 +201,7 @@
 			"annotation": "Goes to the previous keyframe with undo disabled.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.goToPreviousKeyframe()"
 			]
 		},
@@ -210,7 +210,7 @@
 			"annotation": "Interrupts playback and goes to the start frame.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.goToStartFrame()"
 			]
 		},
@@ -219,7 +219,7 @@
 			"annotation": "Interrupts playback and goes to the end frame.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.goToEndFrame()"
 			]
 		},
@@ -228,7 +228,7 @@
 			"annotation": "Toggles between wireframe and shaded.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.toggleWireframe()"
 			]
 		},
@@ -237,7 +237,7 @@
 			"annotation": "Toggles between wireframe on shaded.",
 			"language": "python",
 			"code": [
-				"from ezposer.libs import animhelpers",
+				"from poser.libs import animhelpers",
 				"animhelpers.toggleWireframeOnShaded()"
 			]
 		}

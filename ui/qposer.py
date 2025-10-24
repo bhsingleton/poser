@@ -7,6 +7,7 @@ from fnmatch import fnmatchcase
 from itertools import chain
 from dcc.python import stringutils
 from dcc.ui import qsingletonwindow
+from dcc.json import psonparser
 from dcc.maya.libs import hotkeyutils
 from dcc.vendor.six import string_types, integer_types
 from dcc.vendor.Qt import QtCore, QtWidgets, QtGui, QtCompat
@@ -32,7 +33,7 @@ def onSceneChanged(*args, **kwargs):
 
     # Check if instance exists
     #
-    instance = QEzPoser.getInstance()
+    instance = QPoser.getInstance()
 
     if instance is None:
 
@@ -50,7 +51,7 @@ def onSceneChanged(*args, **kwargs):
 
 
 @staticInitializer
-class QEzPoser(qsingletonwindow.QSingletonWindow):
+class QPoser(qsingletonwindow.QSingletonWindow):
     """
     Overload of `QUicWindow` used to edit poses when animating.
     """
@@ -77,6 +78,11 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         # Store reference to scene interface
         #
         cls.__scene__ = mpyscene.MPyScene.getInstance(asWeakReference=True)
+
+        # Register PSON remaps
+        #
+        directory = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'remaps'))
+        psonparser.PSONDecoder.registerRemaps(directory)
 
         # Load rig configurations
         #
@@ -105,7 +111,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzPoser, self).__init__(*args, **kwargs)
+        super(QPoser, self).__init__(*args, **kwargs)
 
         # Declare private variables
         #
@@ -121,11 +127,11 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzPoser, self).__setup_ui__(self, *args, **kwargs)
+        super(QPoser, self).__setup_ui__(self, *args, **kwargs)
 
         # Initialize main window
         #
-        self.setWindowTitle("|| Ez'Poser")
+        self.setWindowTitle("|| Poser")
         self.setMinimumSize(QtCore.QSize(300, 500))
 
         # Initialize main menu-bar
@@ -345,7 +351,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzPoser, self).loadSettings(settings)
+        super(QPoser, self).loadSettings(settings)
 
         # Load user preferences
         #
@@ -370,7 +376,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
 
         # Call parent method
         #
-        super(QEzPoser, self).saveSettings(settings)
+        super(QPoser, self).saveSettings(settings)
 
         # Save user preferences
         #
@@ -395,7 +401,7 @@ class QEzPoser(qsingletonwindow.QSingletonWindow):
         """
 
         directory = os.path.abspath(os.path.dirname(__file__))
-        filePath = os.path.abspath(os.path.join(directory, '..', 'hotkeys', 'ezposer.json'))
+        filePath = os.path.abspath(os.path.join(directory, '..', 'hotkeys', 'poser.json'))
 
         hotkeyutils.installRuntimeCommandsFromFile(filePath)
 
