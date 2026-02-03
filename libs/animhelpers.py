@@ -4,7 +4,7 @@ from collections import defaultdict
 from dcc.python import stringutils
 from dcc.maya.libs import sceneutils
 from dcc.maya.decorators import undo
-from ..ui import qezposer
+from ..ui import qposer
 
 import logging
 logging.basicConfig()
@@ -24,7 +24,7 @@ def selectControls(visible=False):
     :rtype: None
     """
 
-    qezposer.QEzPoser.selectControls(visible=visible)
+    qposer.QPoser.selectControls(visible=visible)
 
 
 def selectAssociatedControls():
@@ -34,7 +34,7 @@ def selectAssociatedControls():
     :rtype: None
     """
 
-    qezposer.QEzPoser.selectAssociatedControls()
+    qposer.QPoser.selectAssociatedControls()
 
 
 def toggleWireframe():
