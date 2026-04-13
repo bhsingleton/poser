@@ -622,12 +622,10 @@ class QAlignRollout(qrollout.QRollout, metaclass=qabcmeta.QABCMeta):
         skipRotate = self.alignRotateXYZWidget.flags(prefix='skipRotate', inverse=True)
         skipScale = self.alignScaleXYZWidget.flags(prefix='skipScale', inverse=True)
 
-        currentTime = self.scene.time
-
         targetNode.alignTransformTo(
             sourceNode,
-            startTime=currentTime,
-            endTime=currentTime,
+            startTime=self.startTime,
+            endTime=self.endTime,
             maintainTranslate=self.maintainTranslate,
             maintainRotate=self.maintainRotate,
             maintainScale=self.maintainScale,
