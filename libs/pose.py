@@ -524,31 +524,22 @@ class Pose(melsonobject.MELSONObject):
 
         if preserveKeys:
 
-            # Iterate through nodes
+            # Iterate through time-range
             #
-            for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
+            times = self.getKeyframeInputs()
 
-                # Get anim-curve inputs
+            for time in times:
+
+                # Update current time
                 #
-                animCurves = [node.findAnimCurve(plug) for plug in node.iterPlugs(channelBox=True, skipUserAttributes=True)]
-                inputs = dict.fromkeys(chain(*[animCurve.inputs() for animCurve in animCurves if animCurve is not None]), True)
+                self.scene.time = time
 
-                # Iterate through time-range
+                # Iterate through nodes
                 #
-                for (i, time) in enumerate(inclusiveRange(startTime, endTime, step)):
-
-                    # Check if input exists
-                    #
-                    hasInput = inputs.get(time, False)
-
-                    if not hasInput:
-
-                        continue
+                for (node, pose) in self.iterAssociatedPoses(*nodes, **kwargs):
 
                     # Apply transform at time
                     #
-                    self.scene.time = time
-
                     worldMatrix = pose.getTransformation(time)
                     node.setWorldMatrix(worldMatrix, skipTranslate=skipTranslate, skipRotate=skipRotate, skipScale=skipScale)
 
